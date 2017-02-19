@@ -1,0 +1,121 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+button{
+	height: 16px;
+	width: 16px;
+	border: none;
+	background: none;
+}
+p{
+	padding-left: 10px;
+}
+#votecount {
+	text-align: center;
+	margin: auto;
+	padding-top: 6px;
+	padding-right: 40px;
+	font-size: 27px;
+	width: 16px;
+	height: 16px;
+}
+
+.votes {
+  color: #ff0000;
+  float: left;
+  margin-top: 0;
+}
+
+.upvote:hover {
+  color: #21BA45;
+  text-shadow: 2px 2px 2px #21BA45;
+}
+
+.downvote:hover {
+  color: #db2828;
+  text-shadow: 2px 2px 2px #db2828;
+}
+
+
+	 
+
+
+#partyyyyy
+
+#clouds {   
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    margin-top: 0px;
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+    animation-delay: 0s;
+    animation-timing-function: ease-in-out;
+}
+
+#clouds div {position:absolute; width:230px;}
+
+#clouds div img{ display:block; margin-left: auto;margin-right: auto;}
+	.Blittle img{ width:42px; float:left;}
+	.BlittleUP img{ width:51px; float:right}
+	.Bmedium img{ width:90px; float:left}
+	.BmediumUP img{ width:120px; float:right}
+	.BmediumUPUP img{ width:140px}
+	.Bbig img{ width:280px; float:right}
+
+	.Blittle { animation: moveclouds 14s infinite linear forwards;-webkit-animation: moveclouds 14s infinite linear forwards;-moz-animation: moveclouds 14s infinite linear forwards;-o-animation: moveclouds 14s infinite linear forwards;}
+	.BlittleUP  { animation: moveclouds 16s infinite linear forwards; -webkit-animation: moveclouds 16s infinite linear forwards;-moz-animation: moveclouds 16s infinite linear forwards;-o-animation: moveclouds 16s infinite linear forwards;}
+	.Bmedium   { animation: moveclouds 17s infinite linear forwards;-webkit-animation: moveclouds 17s infinite linear forwards;-moz-animation: moveclouds 17s infinite linear forwards;-o-animation: moveclouds 17s infinite linear forwards;}
+	.BmediumUP  { animation: moveclouds 18s infinite linear forwards;-webkit-animation: moveclouds 18s infinite linear forwards;-moz-animation: moveclouds 18s infinite linear forwards;-o-animation: moveclouds 18s infinite linear forwards;}
+	.BmediumUPUP  { animation: moveclouds 19s infinite linear forwards;-webkit-animation: moveclouds 19s infinite linear forwards;-moz-animation: moveclouds 19s infinite linear forwards;-o-animation: moveclouds 19s infinite linear forwards;}
+	.Bbig  { animation: moveclouds 22s infinite linear forwards;-webkit-animation: moveclouds 22s infinite linear forwards;-moz-animation: moveclouds 22s infinite linear forwards;-o-animation: moveclouds 22s infinite linear forwards;}
+
+
+	.BC-1 {left:5%; }
+	.BC-2 {left:14.5%;}
+	.BC-3 {left:25%;}
+	.BC-4 {left:37.5%; }
+	.BC-5 {left:50%;}
+	.BC-6 {left:62.5%; }
+	.BC-7 {left:75%;}
+	.BC-8 {left:87.5%; }
+
+
+	.BC-1 img{ margin-top:500px}
+	.BC-2 img{margin-top:100px}
+	.BC-3 img{ margin-top:300px}
+	.BC-4 img{ margin-top:150px}
+	.BC-5 img{margin-top:350px}
+	.BC-6 img{ margin-top:0px}
+	.BC-7 img{ margin-top:700px}
+	.BC-8 img{ margin-top:100px}
+	.Blittle.BC-8 img{margin-top:350px}
+	.BlittleUP.BC-3 img{margin-top:0px}
+	.BmediumUP.BC-4 img{margin-top:700px}
+
+
+
+@keyframes moveclouds { 
+	0% {  transform: translate(0px, 700px);}
+	100% { transform: translate(0px, -1200px);}
+}
+
+@-webkit-keyframes moveclouds { 
+	0% {  -webkit-transform: translate(0px, 700px);}
+	100% { -webkit-transform: translate(0px, -1200px);}
+}
+
+@-moz-keyframes moveclouds { 
+	0% {  -moz-transform: translate(0px, 700px);}
+	100% { -moz-transform: translate(0px, -1200px);}
+}
+@-o-keyframes moveclouds { 
+	0% {  -o-transform: translate(0px, 700px);}
+	100% { -o-transform: translate(0px, -1200px);}
+}

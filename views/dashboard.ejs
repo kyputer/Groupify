@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+    <script
+            src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+            crossorigin="anonymous"></script>
+    <script src="semantic/dist/semantic.min.js"></script>
+  </head>
+  <body>
+  <section id="clouds">
+      <div class="Blittle BC-2"><img src="/images/balloons.png" alt="balloon"></div>
+      <div class="Blittle BC-8"><img src="/images/balloon1.png" alt="balloon"></div>
+      <div class="BlittleUP BC-3"><img src="/images/balloon2.png" alt="balloon"></div>
+      <div class="BlittleUP BC-6"><img src="/images/balloon3.png" alt="balloon"></div>
+      <div class="Bmedium BC-1"><img src="/images/balloons.png" alt="balloon"></div>
+      <div class="Bmedium BC-3"><img src="/images/balloon1.png" alt="balloon"></div>
+      <div class="BmediumUP BC-4"><img src="/images/balloon2.png" alt="balloon"></div>
+      <div class="BmediumUP BC-8"><img src="/images/balloon3.png" alt="balloon"></div>
+      <div class="BmediumUPUP BC-4"><img src="/images/balloons.png" alt="balloon"></div>
+      <div class="Bbig BC-5"><img src="/images/balloon1.png" alt="balloon"></div>
+      <div class="Bbig BC-7"><img src="/images/balloon2.png" alt="balloon"></div>
+    </section>
+  <div class="ui teal menu">
+    <h3 class="header item"><a href="#">Groupify</a></h3>
+    <a href="#" class="item">Refresh</a>
+    <form action="/search" method="post">
+        <input type="text" name="search" placeholder="search" style="width:600px; padding-top:12px;">
+    </form>
+    <!-- <span><input type="text" name="search" placeholder="Search" style ="width: 600px; padding-top: 12px;"> </span> -->
+  </div>
+    <div class="ui three column grid">
+      <div class="five wide column">
+        <h1 class="header">Playlist</h1>
+        <!-- replace 10 with nominations.length -->
+        <% for (var i=0; i<PlayedJson.length; i++) { %>
+          <div style="margin-left: 3%" class="<% if (!i){ %>yellow<% } %> ui message grey nom-box">
+          <a class="nomination center" href="<%= HotJson[i]["external_urls"]["spotify"] %>"> <br><span class="header"><%= HotJson[i]["name"] %> - <%= HotJson[i]["artists"][0]["name"] %> <br></a>
+          <br>
+        </div>
+        <% } %>
+      </div>
+      <div class="red ten wide column">
+        <h1 class="header">Hot</h1>
+        <!-- replace 10 with nominations.length -->
+          <% for (var i=0; i<HotJson.length; i++) { %>
+        <div style="margin-left: 3%" class="ui message white nom-box">
+          <div class="votes"><i class="angle up icon upvote big" id="<%= HotJson[i]["id"] %>up"></i>
+		<div id="votecount"><p><%= HotVotes[i]["Votes"] %></p></div>
+            <br> <br><i class="angle down icon downvote big"></i>
+            <script>$("#<%= HotJson[i]["id"] %>up").click(function(){$.post("/upvote", {"UserID": "<%= UserID %>", "SpotifyID": "<%= HotJson[i]["id"] %>"});});</script>
+          </div>
+          <a class="nomination center" href="<%= HotJson[i]["external_urls"]["spotify"] %>"> <br><span class="header" style ="padding-left: 16px;"><%= HotJson[i]["name"] %></span> <br><%= HotJson[i]["artists"][0]["name"] %><br></a>
+          <br>
+        </div>
+          <% } %>
+      </div>
+      <!-- <div class="green five wide column">
+        <h1 class="header">New</h1>
+          <% for (var i=0; i<10; i++) { %>
+        <div style="margin-left: 3%" class="ui message white nom-box">
+          <div class="votes"><i class="angle up icon upvote big"></i>
+		  <div id="votecount"><p>#</p></div>
+		  <br> <br><i class="angle down icon downvote big"></i>
+          </div>
+          <a class="nomination center" href="https://open.spotify.com/track/new-nominations[i].spotifyid"> <br><span class="header" style ="padding-left: 16px;">new-nominations[i].title</span> <br>new-nominations[i].artist<br></a>
+          <br>
+        </div>
+          <% } %>
+      </div> -->
+    </div>
+  </body>
+</html>
