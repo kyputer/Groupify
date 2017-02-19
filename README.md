@@ -4,7 +4,7 @@ Created at DandyHacks 2017!
 
 # .env Setup
 
-`USERNAME=root`
+`USERNAME=root`\n
 `PASSWORD=`
 
 `SLACK_TOKEN=`
