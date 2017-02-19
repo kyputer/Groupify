@@ -5,9 +5,9 @@ Created at DandyHacks 2017!
 # .env Setup
 
 `USERNAME=root`
-PASSWORD=`
+`PASSWORD=`
 
-SLACK_TOKEN=
+`SLACK_TOKEN=`
 SLACK_URI=
 
 
