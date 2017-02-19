@@ -3,9 +3,9 @@ A crowdsourced, crowdcurated DJ!
 Created at DandyHacks 2017!
 
 # .env Setup
-`
-USERNAME=root
-PASSWORD=
+
+`USERNAME=root`
+PASSWORD=`
 
 SLACK_TOKEN=
 SLACK_URI=
