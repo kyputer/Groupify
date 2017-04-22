@@ -86,6 +86,11 @@ router.post('/upvote', function (req, res){
     return;
 });
 
+router.post('/downvote', function (req, res){
+    console.log(req.body.SpotifyID);
+    db.tracks.downvote(req.body.SpotifyID, req.body.UserID);
+    return;
+});
 module.exports = router;
 
 

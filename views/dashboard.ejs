@@ -50,9 +50,10 @@
         <div style="margin-left: 3%" class="ui message white nom-box">
           <div class="votes"><i class="angle up icon upvote big" id="<%= HotJson[i]["id"] %>up"></i>
 		<div id="votecount"><p><%= HotVotes[i]["Votes"] %></p></div>
-            <br> <br><i class="angle down icon downvote big"></i>
+		<br> <br><i class="angle down icon downvote big" id="<%= HotJson[i]["id"] %>down"></i>
             <script>$("#<%= HotJson[i]["id"] %>up").click(function(){$.post("/upvote", {"UserID": "<%= UserID %>", "SpotifyID": "<%= HotJson[i]["id"] %>"});});</script>
-          </div>
+          <script>$("#<%= HotJson[i]["id"] %>down").click(function(){$.post("/downvote", {"UserID": "<%= UserID %>", "SpotifyID": "<%= HotJson[i]["id"] %>"});});</script>
+	  </div>
           <a class="nomination center" href="<%= HotJson[i]["external_urls"]["spotify"] %>"> <br><span class="header" style ="padding-left: 16px;"><%= HotJson[i]["name"] %></span> <br><%= HotJson[i]["artists"][0]["name"] %><br></a>
           <br>
         </div>
