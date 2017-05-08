@@ -25,8 +25,13 @@ TIME_STAMP=0
 ```
 
 # Setup
+## Arch Linux
 * npm install
 * systemctl start mysqld
+* npm start
+## Amazon Linux
+* npm install
+* sudo service mysqld start
 * npm start
 
 # TODO
