@@ -1,34 +1,40 @@
 {
   "name": "groupify",
-  "version": "0.0.0",
-  "description": "Collaborate on playlists from anywhere!",
-  "private": true,
+  "version": "1.0.0",
+  "description": "A group management app",
+  "main": "app.js",
+  "type": "module",
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "build": "gulp build",
+    "install-ui": "gulp install"
   },
-  "repository": {
-    "type": "git",
-    "url": "http://github.com/nrung/groupify"
+  "engines": {
+    "node": ">=18"
   },
-  "author": "CodeRIT: Nick Rung, Kyle Suero, Elliot Miller, David Quach",
-  "license": "GPL-3.0",
   "dependencies": {
-    "bcryptjs": "~2.4.3",
-    "body-parser": "~1.16.0",
-    "connect-timeout": "^1.8.0",
-    "cookie-parser": "~1.4.3",
-    "debug": "~2.6.0",
-    "dotenv": "^4.0.0",
-    "ejs": "~2.5.5",
-    "express": "~4.14.1",
-    "express-session": "^1.15.1",
-    "morgan": "~1.7.0",
-    "mysql": "^2.13.0",
-    "passport": "^0.3.2",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "connect-timeout": "^1.9.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "mariadb": "^3.1.2",
+    "morgan": "^1.10.0",
+    "package.json": "^2.0.1",
+    "passport": "^0.6.0",
     "passport-local": "^1.0.0",
-    "semantic-ui": "^2.2.7",
-    "serve-favicon": "~2.3.2",
+    "serve-favicon": "^2.5.0",
     "slack-node": "^0.1.8",
-    "spotify-web-api-node": "^2.3.6"
+    "spotify-web-api-node": "^5.0.2"
+  },
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-autoprefixer": "^8.0.0",
+    "gulp-chmod": "^4.0.0",
+    "gulp-notify": "^5.0.0",
+    "nodemon": "^3.0.1"
   }
 }

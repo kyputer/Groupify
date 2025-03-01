@@ -5,6 +5,12 @@ Created at DandyHacks 2017!
 # .env Setup
 Ensure to configure this file with Spotify and MariaDB credentials prior to deployment.
 
+# mariadb Setup
+- make groupify user
+- mariadb -u root -p
+- MariaDB [(none)]> grant all privileges on groupify.* to groupify@localhost;
+
+
 ```
 USERNAME=root
 PASSWORD=

@@ -1,11 +1,10 @@
-require('dotenv').config();
-var express = require('express');
+import dotenv from 'dotenv';
+import express from 'express';
 var router = express.Router();
-var SpotifyWebApi = require('spotify-web-api-node');
+import SpotifyWebApi from 'spotify-web-api-node';
 var spotifyApi = new SpotifyWebApi();
-var passport = require('passport');
-var db = require("../db");
-var timeout = require('connect-timeout');
+import passport from 'passport';
+import timeout from 'connect-timeout';
 
 /* Here is the authentication middleware */
 function isLoggedIn(req, res, next) {
@@ -91,7 +90,8 @@ router.post('/downvote', function (req, res){
     db.tracks.downvote(req.body.SpotifyID, req.body.UserID);
     return;
 });
-module.exports = router;
+
+export default router;
 
 
 
