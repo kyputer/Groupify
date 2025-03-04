@@ -78,6 +78,8 @@ export async function initializeDatabase() {
     await conn.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
     await conn.query(`USE ${process.env.DB_NAME}`);
 
+    await conn.query('DROP TABLE IF EXISTS playlist_tracks, playlists, tracks, users');
+
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -88,6 +90,7 @@ export async function initializeDatabase() {
       )
     `);
 
+
     await conn.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -95,6 +98,8 @@ export async function initializeDatabase() {
         artist VARCHAR(255) NOT NULL,
         url VARCHAR(255) NOT NULL,
         user_id INT,
+        blacklist INT DEFAULT NULL,
+        votes INT DEFAULT 1, 
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       )

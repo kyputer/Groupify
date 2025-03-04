@@ -112,11 +112,11 @@ var pushBlacklist = function(trackID){
 
     console.log("Push " + trackID);
     // Increment all the blacklisted songs
-    c.query('UPDATE track SET Blacklist=Blacklist+1 WHERE Blacklist IS NOT NULL;');
+    c.query('UPDATE track SET blacklist=blacklist+1 WHERE blacklist IS NOT NULL;');
     // Insert the new song into the blacklist
-    c.query('UPDATE track SET Blacklist=1 WHERE TrackID = ?;', [trackID]);
+    c.query('UPDATE track SET blacklist=1 WHERE TrackID = ?;', [trackID]);
     // Remove blacklist songs 11 or greater
-    c.query('UPDATE track SET Blacklist=NULL WHERE Blacklist=5;');
+    c.query('UPDATE track SET blacklist=NULL WHERE blacklist=5;');
     // Close the connection
     c.release();
 }
@@ -133,7 +133,7 @@ async function getNext(index, callback) {
     try {
         c = await getDBConnection();
 
-    	await c.query('SELECT * FROM track WHERE Blacklist IS NULL ORDER BY votes DESC;',
+    	await c.query('SELECT * FROM tracks WHERE blacklist IS NULL ORDER BY votes DESC;',
         	    function(err, rows){
                 	if (err) throw err;
                 	if (rows.length > index) return callback(rows[index]);
@@ -160,7 +160,7 @@ var getHot = function(callback){
 
 
 
-    c.query('SELECT * FROM track WHERE Blacklist IS NULL ORDER BY Votes DESC;',
+    c.query('SELECT * FROM tracks WHERE blacklist IS NULL ORDER BY Votes DESC;',
             function(err, rows){
                 if (err) throw err;
                 return callback(rows);
@@ -180,7 +180,7 @@ var getNew = function(callback){
 
 
 
-    c.query('SELECT * FROM track WHERE Blacklist IS NULL ORDER BY Votes DESC;',
+    c.query('SELECT * FROM tracks WHERE blacklist IS NULL ORDER BY Votes DESC;',
             function(err, rows){
                 if (err) throw err;
                 return callback(rows);
@@ -200,7 +200,7 @@ var getPlayed = function(callback){
 
 
 
-    c.query('SELECT * FROM track WHERE Blacklist IS NOT NULL ORDER BY Votes DESC;',
+    c.query('SELECT * FROM tracks WHERE blacklist IS NOT NULL ORDER BY Votes DESC;',
             function(err, rows){
                 if (err) throw err;
                 return callback(rows);
