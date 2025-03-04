@@ -50,7 +50,7 @@
 //                 console.log(err)
 //         } finally {
 //                 if (conn) await conn.release();
-//                         db.pool.end();
+//                         db.pool.release();
 //         }
 // }
 
@@ -79,4 +79,4 @@
 
 // // c.query('UPDATE track SET Blacklist=NULL;'); // Reset blacklist
 
-// // c.end();
+// // c.release();

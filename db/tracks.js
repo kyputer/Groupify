@@ -1,5 +1,5 @@
 import mariadb from 'mariadb';
-import {pool} from './db.js';
+import {pool, getDBConnection} from './db.js';
  
 
 const tracks = {
@@ -15,18 +15,18 @@ const tracks = {
 var upvote = async function (spotifyID, userID) {
     let c;
     try{
-    c = await pool.getConnection();
+    c = await getDBConnection();
 
     c.query('SELECT TrackID FROM track WHERE SpotifyID=?;',
             [spotifyID],
             function(err, rows){
                 if (err){
-                    c.end();
+                    c.release();
                     throw err;
                 } if (rows.length == 0){ // Create new track record
                     c.query('INSERT INTO track (SpotifyID,Votes) VALUES (?,?);',
                             [spotifyID, 1]);
-                    c.end();
+                    c.release();
                     // upvote(spotifyID, userID); // call the function again (overhaul this later)
                 } else {
                     c.query('SELECT * FROM vote WHERE TrackID=? AND UserID=?;',
@@ -36,7 +36,7 @@ var upvote = async function (spotifyID, userID) {
                                     console.log(err);
                                     throw err;
                                 } else if (voterows.length > 0) {
-                                    c.end();
+                                    c.release();
                                     return; // User already voted for this
                                 }
                                 // Create new vote record
@@ -45,7 +45,7 @@ var upvote = async function (spotifyID, userID) {
                                 // Increment the vote in the track record
                                 c.query('UPDATE track SET Votes=Votes+1 WHERE TrackID=?;',
                                         [rows[0]["TrackID"]]);
-                                c.end();
+                                c.release();
                             });
                 }
             });
@@ -66,10 +66,10 @@ var downvote = async function (spotifyID, userID) {
     c.connect();*/
     let c;
     try {
-        c = await pool.getConnection();
+        c = await getDBConnection();
         const rows = await c.query('SELECT TrackID FROM track WHERE SpotifyID=?;', [spotifyID]);
         if (rows.length === 0){
-            await c.end(); 
+            await c.release(); 
             return; // Don't downvote a record if one doesn't exist
         }
 
@@ -79,8 +79,8 @@ var downvote = async function (spotifyID, userID) {
         const voterows = await c.query('SELECT * FROM vote WHERE TrackID=? AND UserID=?;', [trackID, userID]);
         
         if (voterows.length > 0) {
-            await c.end
-            return
+            await c.release();
+            return;
         } // User already voted, exit
         
         // Create new vote record
@@ -93,7 +93,7 @@ var downvote = async function (spotifyID, userID) {
         } catch (err) {
             console.error("Database error:", err)
         } finally {
-            if (c) await c.end();
+            if (c) await c.release();
         }
 }
 
@@ -108,7 +108,7 @@ var pushBlacklist = function(trackID){
     //   database : 'groupify'
     // });
     let c;
-    c = pool.getConnection();
+    c = getDBConnection();
 
     console.log("Push " + trackID);
     // Increment all the blacklisted songs
@@ -118,7 +118,7 @@ var pushBlacklist = function(trackID){
     // Remove blacklist songs 11 or greater
     c.query('UPDATE track SET Blacklist=NULL WHERE Blacklist=5;');
     // Close the connection
-    c.end();
+    c.release();
 }
 
 /// passes string argument spotifyID to callback function
@@ -131,20 +131,20 @@ async function getNext(index, callback) {
     });*/
     let c;
     try {
-        c = await pool.getConnection();
+        c = await getDBConnection();
 
-    	c.query('SELECT * FROM track WHERE Blacklist IS NULL ORDER BY votes DESC;',
+    	await c.query('SELECT * FROM track WHERE Blacklist IS NULL ORDER BY votes DESC;',
         	    function(err, rows){
                 	if (err) throw err;
                 	if (rows.length > index) return callback(rows[index]);
             	});
 
-    	c.end();
+    	c.release();
     } catch (err) {
 	console.error("Database error:", err);
 	return null;
     } finally {
-      if (c) c.end();
+      if (c) await c.release();
     }
 }
 
@@ -156,7 +156,7 @@ var getHot = function(callback){
       database : 'groupify'
     });
     
-    c = pool.getConnection();
+    c = getDBConnection();
 
 
 
@@ -166,7 +166,7 @@ var getHot = function(callback){
                 return callback(rows);
             });
 
-    c.end();
+    c.release();
 }
 
 var getNew = function(callback){
@@ -176,7 +176,7 @@ var getNew = function(callback){
       password : process.env.PASSWORD,
       database : 'groupify'
     });
-    c = pool.getConnection();
+    c = getDBConnection();
 
 
 
@@ -186,7 +186,7 @@ var getNew = function(callback){
                 return callback(rows);
             });
 
-    c.end();
+    c.release();
 }
 
 var getPlayed = function(callback){
@@ -196,7 +196,7 @@ var getPlayed = function(callback){
       password : process.env.PASSWORD,
       database : 'groupify'
     });
-    c = pool.getConnection();
+    c = getDBConnection();
 
 
 
@@ -206,7 +206,7 @@ var getPlayed = function(callback){
                 return callback(rows);
             });
 
-    c.end();
+    c.release();
 }
 
 

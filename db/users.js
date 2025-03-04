@@ -23,7 +23,7 @@ var register = function(username, password, cb) {
             cb(null, user);
         });
 
-    c.end();
+    c.release();
 }
 
 /// Implements a passbook strategy
@@ -57,7 +57,7 @@ var findById = function(id, cb) {
                 return cb(null, rows[0]);
         });
 
-    c.end();
+    c.release();
 }
 
 /// Search for user by their username and then pass the user row object (json)
@@ -80,7 +80,7 @@ var findByUsername = function(username, cb) {
                     return cb(null, rows[0]);
             });
 
-    c.end();
+    c.release();
 }
 
 // Define exports
