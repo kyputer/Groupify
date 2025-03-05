@@ -125,8 +125,8 @@ export async function initializeDatabase() {
       )
     `);
     dbInitialized = true;
-    console.log("Database initialized successfully.");
     // After successfully creating the database and tables:
+    console.log('db.js init done!')
   } catch (err) {
     console.error("Error initializing database:", err);
     throw err;

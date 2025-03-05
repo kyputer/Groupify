@@ -1,8 +1,12 @@
 import dotenv from 'dotenv';
+import ejs from 'ejs';
 import express from 'express';
-var router = express.Router();
+const router = express.Router();
 import SpotifyWebApi from 'spotify-web-api-node';
 var spotifyApi = new SpotifyWebApi();
+import tracks from '../db/tracks.js';
+import users from '../db/users.js';
+
 import passport from 'passport';
 import timeout from 'connect-timeout';
 
@@ -40,7 +44,7 @@ router.post('/search', function(req, res) {
     spotifyApi.searchTracks(req.body.search, [], function(err, data){
         if(err==null){
             // console.log(data["body"]["tracks"]["items"][0]);
-            db.tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["UserID"]);
+            tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["UserID"]);
             res.redirect('/dashboard');
         }
     });
@@ -48,26 +52,26 @@ router.post('/search', function(req, res) {
 
 router.post('/signup',
   function(req, res) {
-    db.users.register(req.body.username, req.body.password, function(err, rows){
+    users.register(req.body.username, req.body.password, function(err, rows){
       res.redirect('/login');
     });
 });
 
 /* User register route */
 router.post('/register', function(req, res){
-    db.users.register(request.body.username, request.body.password);
+    users.register(request.body.username, request.body.password);
 });
 
 /* Load the dashboard */
 router.get('/dashboard', isLoggedIn, function(req, res) {
-    db.tracks.getHot(function (rows){
+    tracks.getHot(function (rows){
         var ids = [];
         for (var i=0;i<rows.length;i++) ids.push(rows[i]["SpotifyID"]);
         if (ids.length==0) return res.render('dashboard', {HotJson:[], PlayedJson:[], UserID: req.user["UserID"]});
         spotifyApi.getTracks(ids, {}, function(err, a){
 
 
-            db.tracks.getPlayed(function (playedrows){
+            tracks.getPlayed(function (playedrows){
                 var ids2 = [];
                 for (var j=0;j<playedrows.length;j++) ids2.push(playedrows[j]["SpotifyID"]);
                 spotifyApi.getTracks(ids2, {}, function(err, b){
@@ -81,13 +85,13 @@ router.get('/dashboard', isLoggedIn, function(req, res) {
 
 router.post('/upvote', function (req, res){
     console.log(req.body.SpotifyID);
-    db.tracks.upvote(req.body.SpotifyID, req.body.UserID);
+    tracks.upvote(req.body.SpotifyID, req.body.UserID);
     return;
 });
 
 router.post('/downvote', function (req, res){
     console.log(req.body.SpotifyID);
-    db.tracks.downvote(req.body.SpotifyID, req.body.UserID);
+    tracks.downvote(req.body.SpotifyID, req.body.UserID);
     return;
 });
 

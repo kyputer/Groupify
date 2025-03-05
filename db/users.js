@@ -1,8 +1,15 @@
-var mysql = require('mysql');
-var passport = require('passport');
-var Strategy = require('passport-local').Strategy;
-var bcrypt = require('bcryptjs');
+import mariadb from 'mariadb';
+import passport from 'passport';
+import {pool} from "../db/db.js";
 
+// var Strategy = require('passport-local').Strategy;
+import bcrypt from 'bcryptjs';
+
+const users = {
+    register,
+    findById,
+    strategy,
+}
 
 /// Creates a new user given a username and password
 var register = function(username, password, cb) {
@@ -84,7 +91,9 @@ var findByUsername = function(username, cb) {
 }
 
 // Define exports
-module.exports.register = register;
-module.exports.strategy = strategy;
-module.exports.findById = findById;
-module.exports.findByUsername = findByUsername;
+// module.exports.register = register;
+// module.exports.strategy = strategy;
+// module.exports.findById = findById;
+// module.exports.findByUsername = findByUsername;
+
+export default users;

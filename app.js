@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
+import { fileURLToPath } from 'url';
 import session from 'express-session';
 import path from 'path';
 //import favicon from 'serve-favicon';
@@ -10,10 +11,16 @@ import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import LocalStrategy from "passport-local";
 import bcrypt from 'bcryptjs';
+
 import { initializeDatabase, findUserByUsername, pool} from "./db/db.js";
+import indexRouter from './routes/index.js'; 
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const port = process.env.PORT || 3000;
-import index from './routes/index.js';
 
 
 
@@ -37,6 +44,16 @@ import { updateForeignPlaylist } from './updateForeignPlaylist.js';
     process.exit(1); // Stop if DB fails
   }
 })();
+
+// Set up the view engine (using EJS in this example)
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
+// Middleware to serve static assets (e.g., CSS, JS, images)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Mount your route(s)
+app.use('/', indexRouter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
