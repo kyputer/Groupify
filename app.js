@@ -50,11 +50,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve Semantic UI assets from the semantic folder
 app.use('/semantic', express.static(path.join(__dirname, 'semantic')));
 
-// Mount your route(s)
-app.use('/', indexRouter);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Mount your route(s)
+app.use('/', indexRouter);
 
 // Set up session middleware
 app.use(
