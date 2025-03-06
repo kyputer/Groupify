@@ -9,6 +9,7 @@ const users = {
     register,
     findById,
     strategy,
+    findByUsername
 }
 
 /// Creates a new user given a username and password
@@ -42,39 +43,51 @@ var strategy = function(username, password, cb) {
 
 /// Search for user by their id and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
-async function findById(id, cb) {
-    let c;
+async function findById(id) {
+    let conn;
     try {
-        c = await getDBConnection();
-        const rows = await c.query('SELECT * FROM users WHERE id = ?;', [id]);
-        if (rows.length > 0) {
-            cb(null, rows[0]);
-        }else {
-            cb(null, false);
-        }
+        console.log(`Finding user by ID: ${id}`);
+        conn = await getDBConnection();
+        console.log('Database connection established');
+        const rows = await conn.query('SELECT * FROM users WHERE id = ?;', [id]);
+        console.log('Query executed');
+        return rows.length > 0 ? rows[0] : null;
     } catch (err) {
-        cb(err);
+        console.error("Database error:", err);
+        throw err;
     } finally {
-        if (c) await c.release();
+        if (conn) {
+            try {
+                console.log('Releasing database connection');
+                await conn.release();
+                console.log('Database connection released');
+            } catch (releaseErr) {
+                console.error('Error releasing database connection:', releaseErr);
+            }
+        }
     }
 }
 
 /// Search for user by their username and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
-async function findByUsername(username, cb) {
-    let c;
-    try{ 
+async function findByUsername(username) {
+    let conn;
+    try {
+        console.log(`Finding user by username: ${username}`);
         conn = await getDBConnection();
-        const rows = await conn.query('SELECT * FROM user WHERE Username = ?;', [username]);
-        if (rows.length > 0) {
-            cb(null, rows[0]);
-        }else {
-            cb(null, null);
-        }
+        const rows = await conn.query('SELECT * FROM users WHERE username = ?;', [username]);
+        return rows.length > 0 ? rows[0] : null;
     } catch (err) {
-        cb(err);
+        console.error("Database error:", err);
+        throw err;
     } finally {
-        if (conn) await conn.release();
+        if (conn) {
+            try {
+                await conn.release();
+            } catch (releaseErr) {
+                console.error('Error releasing database connection:', releaseErr);
+            }
+        }
     }
 }
 

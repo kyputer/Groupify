@@ -5,7 +5,6 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
 import path from 'path';
-//import favicon from 'serve-favicon';
 import passport from 'passport';
 import indexRouter from './routes/index.js'; 
 import LocalStrategy from "passport-local";
@@ -44,6 +43,12 @@ app.use(flash());
 // Initialize Passport and restore authentication state, if any, from the session
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Log each request
+app.use((req, res, next) => {
+  console.log(`Received request: ${req.method} ${req.url}`);
+  next();
+});
 
 // Mount your route(s)
 app.use('/', indexRouter);
@@ -97,37 +102,31 @@ passport.use(
   })
 );
 
-// // Serialize user
-// passport.serializeUser((user, done) => {
-//   done(null, user.id);
-// });
-
-// // Deserialize user
-// passport.deserializeUser(async (id, done) => {
-//   let conn;
-//   try {
-//     conn = await getDBConnection();
-//     const rows = await conn.query("SELECT * FROM users WHERE id = ?", [id]);
-//     if (rows.length > 0) {
-//       done(null, rows[0]);
-//     } else {
-//       done(null, false);
-//     }
-//   } catch (err) {
-//     done(err);
-//   } finally {
-//     if (conn) await conn.release();
-//   }
-// });
-
-
 /* Step 3: Add Authentication Routes
 Modify app.js to include login/logout routes.
 Add Authentication Endpoints*/
 
 // Login route
-app.post("/login", passport.authenticate("local"), (req, res) => {
-  res.json({ message: "Login successful", user: req.user });
+app.post("/login", (req, res, next) => {
+  console.log(`Login attempt for user: ${req.body.username}`);
+  passport.authenticate("local", (err, user, info) => {
+    if (err) {
+      console.error('Error during login:', err);
+      return next(err);
+    }
+    if (!user) {
+      console.log('Login failed:', info.message);
+      return res.status(401).json({ message: info.message });
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error('Error during login:', err);
+        return next(err);
+      }
+      console.log('Login successful');
+      return res.json({ message: "Login successful", user: req.user });
+    });
+  })(req, res, next);
 });
 
 // Logout route
