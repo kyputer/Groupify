@@ -47,6 +47,9 @@ app.set('view engine', 'ejs');
 // Middleware to serve static assets (e.g., CSS, JS, images)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve Semantic UI assets from the semantic folder
+app.use('/semantic', express.static(path.join(__dirname, 'semantic')));
+
 // Mount your route(s)
 app.use('/', indexRouter);
 
