@@ -15,7 +15,7 @@ const users = {
 var register = function(username, password, cb) {
     var hash = bcrypt.hashSync(password, 8);
 
-    var c = mysql.createConnection({
+    var c = pool.createConnection({
       host     : '127.0.0.1',
       user     : process.env.USERNAME,
       password : process.env.PASSWORD,
@@ -47,7 +47,7 @@ var strategy = function(username, password, cb) {
 /// Search for user by their id and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
 var findById = function(id, cb) {
-    var c = mysql.createConnection({
+    var c = pool.createConnection({
       host     : '127.0.0.1',
       user     : process.env.USERNAME,
       password : process.env.PASSWORD,
@@ -70,7 +70,7 @@ var findById = function(id, cb) {
 /// Search for user by their username and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
 var findByUsername = function(username, cb) {
-    var c = mysql.createConnection({
+    var c = pool.createConnection({
       host     : '127.0.0.1',
       user     : process.env.USERNAME,
       password : process.env.PASSWORD,

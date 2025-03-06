@@ -1,5 +1,3 @@
-import dotenv from 'dotenv';
-import ejs from 'ejs';
 import express from 'express';
 const router = express.Router();
 import SpotifyWebApi from 'spotify-web-api-node';
@@ -8,7 +6,6 @@ import tracks from '../db/tracks.js';
 import users from '../db/users.js';
 
 import passport from 'passport';
-import timeout from 'connect-timeout';
 
 /* Here is the authentication middleware */
 function isLoggedIn(req, res, next) {
@@ -52,6 +49,7 @@ router.post('/search', function(req, res) {
 
 router.post('/signup',
   function(req, res) {
+	console.log(req.body)
     users.register(req.body.username, req.body.password, function(err, rows){
       res.redirect('/login');
     });
@@ -59,7 +57,8 @@ router.post('/signup',
 
 /* User register route */
 router.post('/register', function(req, res){
-    users.register(request.body.username, request.body.password);
+	console.log("HI "+req)
+    users.register(req.body.username, req.body.password);
 });
 
 /* Load the dashboard */

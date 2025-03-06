@@ -6,14 +6,12 @@ import { fileURLToPath } from 'url';
 import session from 'express-session';
 import path from 'path';
 //import favicon from 'serve-favicon';
-import logger from 'morgan';
-import cookieParser from 'cookie-parser';
 import passport from 'passport';
+import indexRouter from './routes/index.js'; 
 import LocalStrategy from "passport-local";
 import bcrypt from 'bcryptjs';
 
 import { initializeDatabase, findUserByUsername, pool} from "./db/db.js";
-import indexRouter from './routes/index.js'; 
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,9 +19,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-
-
 
 import { updateForeignPlaylist } from './updateForeignPlaylist.js';
 

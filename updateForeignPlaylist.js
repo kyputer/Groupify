@@ -1,5 +1,3 @@
-import dotenv from 'dotenv';
-import { initializeDatabase, findUserByUsername, pool} from "./db/db.js";
 import tracks from './db/tracks.js';
 import SpotifyWebApi from 'spotify-web-api-node';
 var spotifyApi = new SpotifyWebApi({
