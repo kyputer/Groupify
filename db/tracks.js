@@ -141,32 +141,31 @@ async function getNext(index, callback) {
 
     	c.release();
     } catch (err) {
-	console.error("Database error:", err);
-	return null;
+	    console.error("Database error:", err);
+	    return null;
     } finally {
       if (c) await c.release();
     }
 }
 
-var getHot = function(callback){
-    var c = mariadb.createConnection({
-      host     : '127.0.0.1',
-      user     : process.env.USERNAME,
-      password : process.env.PASSWORD,
-      database : 'groupify'
-    });
-    
-    c = getDBConnection();
 
-
-
-    c.query('SELECT * FROM tracks WHERE blacklist IS NULL ORDER BY Votes DESC;',
+async function getHot(callback){
+    let c;
+    try{
+        c = await getDBConnection();
+        await c.query('SELECT * FROM tracks WHERE blacklist IS NULL ORDER BY Votes DESC;',
             function(err, rows){
                 if (err) throw err;
                 return callback(rows);
             });
 
-    c.release();
+        c.release();
+    } catch (err) {
+        console.error("Database error:", err);
+        return null;
+    } finally {
+        if (c) await c.release();
+    }
 }
 
 var getNew = function(callback){

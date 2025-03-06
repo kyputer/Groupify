@@ -10,8 +10,13 @@ import passport from 'passport';
 import indexRouter from './routes/index.js'; 
 import LocalStrategy from "passport-local";
 import bcrypt from 'bcryptjs';
+import flash from 'connect-flash'
 
-import { initializeDatabase, findUserByUsername, pool} from "./db/db.js";
+import './passport-config.js'; // Ensure this line is added to import the Passport configuration
+
+
+import { getDBConnection, findUserByUsername, initializeDatabase, pool} from "./db/db.js";
+import { updateForeignPlaylist } from './updateForeignPlaylist.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +25,29 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
-import { updateForeignPlaylist } from './updateForeignPlaylist.js';
+// Middleware to parse request body
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Set up session middleware
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret", 
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// Initialize connect-flash
+app.use(flash());
+
+// Initialize Passport and restore authentication state, if any, from the session
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Mount your route(s)
+app.use('/', indexRouter);
+
 
 (async () => {
   try {
@@ -50,22 +77,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve Semantic UI assets from the semantic folder
 app.use('/semantic', express.static(path.join(__dirname, 'semantic')));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-// Mount your route(s)
-app.use('/', indexRouter);
 
-// Set up session middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "secret", 
-    resave: false,
-    saveUninitialized: false,
-  })
-);
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Passport Local Strategy
 passport.use(
@@ -84,48 +97,28 @@ passport.use(
   })
 );
 
-// Serialize user
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
+// // Serialize user
+// passport.serializeUser((user, done) => {
+//   done(null, user.id);
+// });
 
-// Deserialize user
-passport.deserializeUser(async (id, done) => {
-  let conn;
-  try {
-    conn = await getDBConnection();
-    const rows = await conn.query("SELECT * FROM users WHERE id = ?", [id]);
-    if (rows.length > 0) {
-      done(null, rows[0]);
-    } else {
-      done(null, false);
-    }
-  } catch (err) {
-    done(err);
-  } finally {
-    if (conn) await conn.release();
-  }
-});
-
-// Initialize database before starting the server
-// (async () => {
+// // Deserialize user
+// passport.deserializeUser(async (id, done) => {
+//   let conn;
 //   try {
-//     await initializeDatabase();
-//     console.log("Database is ready. Starting server...");
-
-//     app.get("/", (req, res) => {
-//       res.send("Groupify API is running!");
-//     });
-
-//     app.listen(port, () => {
-//       console.log(`Server running on http://localhost:${port}`);
-//     });
-//   } catch (error) {
-//     console.error("Error initializing database:", error);
-//     process.exit(1);
+//     conn = await getDBConnection();
+//     const rows = await conn.query("SELECT * FROM users WHERE id = ?", [id]);
+//     if (rows.length > 0) {
+//       done(null, rows[0]);
+//     } else {
+//       done(null, false);
+//     }
+//   } catch (err) {
+//     done(err);
+//   } finally {
+//     if (conn) await conn.release();
 //   }
-// })();
-
+// });
 
 
 /* Step 3: Add Authentication Routes

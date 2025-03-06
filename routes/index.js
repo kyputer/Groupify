@@ -1,7 +1,9 @@
 import express from 'express';
-const router = express.Router();
 import SpotifyWebApi from 'spotify-web-api-node';
 var spotifyApi = new SpotifyWebApi();
+
+const router = express.Router();
+
 import tracks from '../db/tracks.js';
 import users from '../db/users.js';
 
@@ -30,11 +32,11 @@ router.get('/signup', function(req, res, next) {
 });
 
 /* User authentication route */
-router.post('/login',
-  passport.authenticate('local', { failureRedirect: '/fail' }),
-  function(req, res) {
-    res.redirect('/dashboard');
-});
+router.post('/login', passport.authenticate('local',{
+	successRedirect: '/dashboard',
+	failureRedirect: '/login',
+	failureFlash: true
+ })),
 
 router.post('/search', function(req, res) {
     // console.log(req.body.search);
@@ -57,8 +59,13 @@ router.post('/signup',
 
 /* User register route */
 router.post('/register', function(req, res){
-	console.log("HI "+req)
-    users.register(req.body.username, req.body.password);
+	console.log("HI " + req.body);
+    users.register(req.body.username, req.body.password, function(err){
+		if (err) {
+			return res.status(500).send('Registration failed');
+		}
+		res.redirect('/login')
+	});
 });
 
 /* Load the dashboard */
