@@ -12,7 +12,8 @@ const tracks = {
 };
 
 async function upvote(track, userID) {
-console.log(`Upvoting track: ${track.id} by user: ${userID}`);
+  console.log
+  console.log(`Upvoting track: ${track.id} by user: ${userID}`);
   let conn;
   try {
     conn = await getDBConnection();
@@ -139,23 +140,19 @@ var getNew = async function(callback) {
     c.release();
 }
 
-var getPlayed = async function(callback) {
+async function getPlayed() {
   console.log('Retrieving played tracks');
-    var c = mariadb.createConnection({
-      host     : '127.0.0.1',
-      user     : process.env.USERNAME,
-      password : process.env.PASSWORD,
-      database : 'groupify'
-    });
-    c = getDBConnection();
+  let conn;
+  try {
+    conn = await getDBConnection();
+    conn.query('SELECT * FROM tracks WHERE blacklist IS NOT NULL ORDER BY Votes DESC;')
 
-    c.query('SELECT * FROM tracks WHERE blacklist IS NOT NULL ORDER BY Votes DESC;',
-            function(err, rows){
-                if (err) throw err;
-                return callback(rows);
-            });
+  } catch(err) {
+    console.errorr("Database error:", err);
+  } finally {
+    if (conn) await conn.release();
+  }
 
-    c.release();
 }
 
 // Define exports
