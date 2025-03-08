@@ -4,6 +4,12 @@ var spotifyApi = new SpotifyWebApi();
 
 const router = express.Router();
 
+// Middleware to log each request
+router.use((req, res, next) => {
+  console.log(`Received request: ${req.method} ${req.url}`);
+  next();
+});
+
 import tracks from '../db/tracks.js';
 import users from '../db/users.js';
 
@@ -38,14 +44,35 @@ router.post('/login', passport.authenticate('local', {
   failureFlash: true
 }));
 
-router.post('/search', function(req, res) {
-  console.log('Search request received');
-  spotifyApi.searchTracks(req.body.search, [], function(err, data) {
-    if (err == null) {
-      tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["UserID"]);
-      res.redirect('/dashboard');
-    }
-  });
+router.post('/search', async (req, res) => {
+	spotifyApi.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
+	try {
+  		console.log(`Search request received for ${req.body.search} from  ${req.user["id"]}`);
+		const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
+		const results = data.body.tracks.items;
+
+		if (results.length === 0) {
+			console.log('No tracks found');
+			return res.status(404).json({error: 'No tracks found'});
+		}
+		const track = results.find(item => item.type === 'track');
+    // console.log(track)
+    // console.log(track.artists[0].name)
+		console.log(`Track found: ${track.name}, upvoting...`);
+
+
+		// Upvote the first track found
+		await tracks.upvote(track, req.user["id"]);
+
+	}catch (err) {
+		console.error('Error handling search request:', err);
+		res.status(500).json({error: 'Search request failed'});
+	}
+    // if (err == null) {
+	// 	console.log("No errors in search")
+    //   tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["id"]);
+    //   res.redirect('/dashboard');
+    // }
 });
 
 router.post('/signup',
@@ -116,6 +143,8 @@ router.post('/downvote', function (req, res){
   tracks.downvote(req.body.SpotifyID, req.body.UserID);
   return;
 });
+
+
 
 export default router;
 

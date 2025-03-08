@@ -44,9 +44,20 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Log each request
+// Middleware to log each request
 app.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.url}`);
+  next();
+});
+
+// Middleware to handle request timeouts
+app.use((req, res, next) => {
+  const timeout = setTimeout(() => {
+    console.error('Request timed out');
+    res.status(504).json({ error: 'Request timed out' });
+  }, 10000); // 10 seconds timeout
+
+  res.on('finish', () => clearTimeout(timeout));
   next();
 });
 

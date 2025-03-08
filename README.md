@@ -41,6 +41,10 @@ TIME_STAMP=0
 * sudo service mariadb start
 * npm start
 
+## Logging and Timeout
+
+All routes now include logging for each request and a timeout mechanism to prevent requests from hanging indefinitely. If a request takes longer than 10 seconds, it will be terminated with a 504 status code.
+
 # TODO
 - [ ] dynamic refresh
 - [ ] drop-down song search
