@@ -4,6 +4,7 @@ var spotifyApi = new SpotifyWebApi();
 
 const router = express.Router();
 
+
 // Middleware to log each request
 router.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.url}`);
@@ -47,7 +48,7 @@ router.post('/login', passport.authenticate('local', {
 router.post('/search', async (req, res) => {
 	spotifyApi.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
 	try {
-  		console.log(`Search request received for ${req.body.search} from  ${req.user["id"]}`);
+  	console.log(`Search request received for ${req.body.search} from  ${req.user["id"]}`);
 		const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
 		const results = data.body.tracks.items;
 
@@ -56,23 +57,17 @@ router.post('/search', async (req, res) => {
 			return res.status(404).json({error: 'No tracks found'});
 		}
 		const track = results.find(item => item.type === 'track');
-    // console.log(track)
-    // console.log(track.artists[0].name)
 		console.log(`Track found: ${track.name}, upvoting...`);
-
 
 		// Upvote the first track found
 		await tracks.upvote(track, req.user["id"]);
 
-	}catch (err) {
+		// Redirect to the dashboard after upvoting
+		res.redirect('/dashboard');
+	} catch (err) {
 		console.error('Error handling search request:', err);
 		res.status(500).json({error: 'Search request failed'});
 	}
-    // if (err == null) {
-	// 	console.log("No errors in search")
-    //   tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["id"]);
-    //   res.redirect('/dashboard');
-    // }
 });
 
 router.post('/signup',
@@ -117,6 +112,10 @@ router.get('/dashboard', isLoggedIn, function(req, res) {
         console.log('Played tracks retrieved:', playedrows);
         var ids2 = [];
         for (var j=0;j<playedrows.length;j++) ids2.push(playedrows[j]["SpotifyID"]);
+        if (ids2.length == 0) {
+          console.log('No played tracks found');
+          return res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: [], UserID: req.user["UserID"] });
+        }
         spotifyApi.getTracks(ids2, {}, function(err, b){
           if (err) {
             console.error('Error retrieving played tracks from Spotify:', err);
@@ -134,6 +133,7 @@ router.post('/upvote', function (req, res){
   console.log('Upvote request received');
   console.log(req.body.SpotifyID);
   tracks.upvote(req.body.SpotifyID, req.body.UserID);
+  res.redirect('/dashboard')
   return;
 });
 

@@ -49,7 +49,6 @@ async function findById(id) {
     console.log(`Finding user by ID: ${id}`);
     let conn;
     try {
-        console.log(`Finding user by ID: ${id}`);
         conn = await getDBConnection();
         console.log('Database connection established');
         const rows = await conn.query('SELECT * FROM users WHERE id = ?;', [id]);
@@ -74,7 +73,6 @@ async function findById(id) {
 /// Search for user by their username and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
 async function findByUsername(username) {
-    console.log(`Finding user by username: ${username}`);
     let conn;
     try {
         console.log(`Finding user by username: ${username}`);

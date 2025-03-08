@@ -1,5 +1,5 @@
 import mariadb from 'mariadb';
-import { pool, getDBConnection } from './db.js';
+import { getDBConnection } from './db.js';
 
 const tracks = {
   upvote,
@@ -12,29 +12,42 @@ const tracks = {
 };
 
 async function upvote(track, userID) {
-  console.log
   console.log(`Upvoting track: ${track.id} by user: ${userID}`);
   let conn;
   try {
     conn = await getDBConnection();
+    console.log('Database connection established');
+
     const rows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
+    console.log('Query executed:', rows);
     if (rows.length == 0) {
       await conn.query('INSERT INTO tracks (SpotifyID, title, artist, url, Votes) VALUES (?,?,?,?,?);', [track.id, track.name, track.artists[0].name, track.href, 1]);
+      console.log('Track inserted');
     } else {
       const trackID = rows[0]["id"];
       const voterows = await conn.query('SELECT * FROM vote WHERE id=? AND UserID=?;', [trackID, userID]);
+      console.log('Vote query executed:', voterows);
       if (voterows.length > 0) {
+        console.log('User already voted for this track');
         return; // User already voted for this
       }
       await conn.query('INSERT INTO vote (id, UserID, Play) VALUES (?,?,?);', [trackID, userID, true]);
       await conn.query('UPDATE tracks SET Votes=Votes+1 WHERE id=?;', [trackID]);
+      console.log('Track upvoted');
     }
   } catch (err) {
     console.error("Database error:", err);
   } finally {
-    if (conn) await conn.release();
+    if (conn) {
+      try {
+        await conn.release();
+        console.log('Database connection released');
+      } catch (releaseErr) {
+        console.error('Error releasing database connection:', releaseErr);
+      }
+    }
   }
-};
+}
 
 var downvote = async function (spotifyID, userID) {
 console.log(`Downvoting track: ${spotifyID} by user: ${userID}`);
@@ -140,19 +153,27 @@ var getNew = async function(callback) {
     c.release();
 }
 
-async function getPlayed() {
+async function getPlayed(callback) {
   console.log('Retrieving played tracks');
   let conn;
   try {
     conn = await getDBConnection();
-    conn.query('SELECT * FROM tracks WHERE blacklist IS NOT NULL ORDER BY Votes DESC;')
-
-  } catch(err) {
-    console.errorr("Database error:", err);
+    const rows = await conn.query('SELECT * FROM tracks WHERE blacklist IS NOT NULL ORDER BY Votes DESC;');
+    console.log('Played tracks query executed:', rows);
+    callback(rows);
+  } catch (err) {
+    console.error("Database error:", err);
+    callback([]);
   } finally {
-    if (conn) await conn.release();
+    if (conn) {
+      try {
+        await conn.release();
+        console.log('Database connection released');
+      } catch (releaseErr) {
+        console.error('Error releasing database connection:', releaseErr);
+      }
+    }
   }
-
 }
 
 // Define exports
