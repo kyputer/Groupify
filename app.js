@@ -51,15 +51,15 @@ app.use((req, res, next) => {
 });
 
 // Middleware to handle request timeouts
-app.use((req, res, next) => {
-  const timeout = setTimeout(() => {
-    console.error('Request timed out');
-    res.status(504).json({ error: 'Request timed out' });
-  }, 10000); // 10 seconds timeout
+// app.use((req, res, next) => {
+//   const timeout = setTimeout(() => {
+//     console.error('Request timed out');
+//     res.status(504).json({ error: 'Request timed out' });
+//   }, 10000); // 10 seconds timeout
 
-  res.on('finish', () => clearTimeout(timeout));
-  next();
-});
+//   res.on('finish', () => clearTimeout(timeout));
+//   next();
+// });
 
 // Mount your route(s)
 app.use('/', indexRouter);
