@@ -1,6 +1,6 @@
 import mariadb from 'mariadb';
 import passport from 'passport';
-import {getDBConnection, pool} from "../db/db.js";
+import { getDBConnection, pool } from "../db/db.js";
 
 // var Strategy = require('passport-local').Strategy;
 import bcrypt from 'bcryptjs';
@@ -13,15 +13,14 @@ const users = {
 }
 
 /// Creates a new user given a username and password
-async function register(username, password, cb) {
+async function register(email, username, password, cb) {
     let hash = bcrypt.hashSync(password, 8);
     let conn;
 
     try {
         conn = await getDBConnection();
-        await conn.query('INSERT INTO users (username, password_hash) VALUES (?,?);',
-            [username, hash]);
-                cb(null, {username: username});
+        await conn.query('INSERT INTO users (email, username, password_hash) VALUES (?,?,?);', [email, username, hash]);
+        cb({ email: email }, { username: username });
     } catch (err) {
         console.error("Database error, user registration:", err);
         cb(err);

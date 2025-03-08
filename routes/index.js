@@ -11,110 +11,110 @@ import passport from 'passport';
 
 /* Here is the authentication middleware */
 function isLoggedIn(req, res, next) {
-  if (req.isAuthenticated()) return next();
-  res.redirect('/');
+    if (req.isAuthenticated()) return next();
+    res.redirect('/');
 }
 
 /* GET login page. */
 router.get('/', function(req, res, next) {
-  console.log('Rendering login page');
-  res.render('index', { title: 'Groupify' });
+    console.log('Rendering login page');
+    res.render('index', { title: 'Groupify' });
 });
 router.get('/login', function(req, res, next) {
-  console.log('Rendering login page');
-  res.render('index', { title: 'Groupify' });
+    console.log('Rendering login page');
+    res.render('index', { title: 'Groupify' });
 });
 
 /* GET signup page */
 router.get('/signup', function(req, res, next) {
-  console.log('Rendering signup page');
-  res.render('signup');
+    console.log('Rendering signup page');
+    res.render('signup');
 });
 
 /* User authentication route */
 router.post('/login', passport.authenticate('local', {
-  successRedirect: '/dashboard',
-  failureRedirect: '/login',
-  failureFlash: true
+    successRedirect: '/dashboard',
+    failureRedirect: '/login',
+    failureFlash: true
 }));
 
 router.post('/search', function(req, res) {
-  console.log('Search request received');
-  spotifyApi.searchTracks(req.body.search, [], function(err, data) {
-    if (err == null) {
-      tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["UserID"]);
-      res.redirect('/dashboard');
-    }
-  });
-});
-
-router.post('/signup',
-  function(req, res) {
-  console.log('Signup request received');
-  console.log(req.body)
-    users.register(req.body.username, req.body.password, function(err, rows){
-      res.redirect('/login');
+    console.log('Search request received');
+    spotifyApi.searchTracks(req.body.search, [], function(err, data) {
+        if (err == null) {
+            tracks.upvote(data["body"]["tracks"]["items"][0]["id"], req.user["UserID"]);
+            res.redirect('/dashboard');
+        }
     });
 });
 
+router.post('/signup',
+    function(req, res) {
+        console.log('Signup request received');
+        console.log(req.body)
+        users.register(req.body.email, req.body.username, req.body.password, function(err, rows) {
+            res.redirect('/login');
+        });
+    });
+
 /* User register route */
-router.post('/register', function(req, res){
-  console.log('Register request received');
-  console.log("HI " + req.body);
-    users.register(req.body.username, req.body.password, function(err){
-    if (err) {
-      return res.status(500).send('Registration failed');
-    }
-    res.redirect('/login')
-  });
+router.post('/register', function(req, res) {
+    console.log('Register request received');
+    console.log("HI " + req.body);
+    users.register(req.body.email, req.body.username, req.body.password, function(err) {
+        if (err) {
+            return res.status(500).send('Registration failed');
+        }
+        res.redirect('/login')
+    });
 });
 
 /* Load the dashboard */
 router.get('/dashboard', isLoggedIn, function(req, res) {
-  console.log('Loading dashboard');
-  tracks.getHot(function (rows){
-    console.log('Hot tracks retrieved:', rows);
-    var ids = [];
-    for (var i=0;i<rows.length;i++) ids.push(rows[i]["SpotifyID"]);
-    if (ids.length==0) {
-      console.log('No hot tracks found');
-      return res.render('dashboard', {HotJson:[], PlayedJson:[], UserID: req.user["UserID"]});
-    }
-    spotifyApi.getTracks(ids, {}, function(err, a){
-      if (err) {
-        console.error('Error retrieving tracks from Spotify:', err);
-        return res.status(500).send('Error retrieving tracks from Spotify');
-      }
-      console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
-      tracks.getPlayed(function (playedrows){
-        console.log('Played tracks retrieved:', playedrows);
-        var ids2 = [];
-        for (var j=0;j<playedrows.length;j++) ids2.push(playedrows[j]["SpotifyID"]);
-        spotifyApi.getTracks(ids2, {}, function(err, b){
-          if (err) {
-            console.error('Error retrieving played tracks from Spotify:', err);
-            return res.status(500).send('Error retrieving played tracks from Spotify');
-          }
-          console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
-          res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"]});
+    console.log('Loading dashboard');
+    tracks.getHot(function(rows) {
+        console.log('Hot tracks retrieved:', rows);
+        var ids = [];
+        for (var i = 0; i < rows.length; i++) ids.push(rows[i]["SpotifyID"]);
+        if (ids.length == 0) {
+            console.log('No hot tracks found');
+            return res.render('dashboard', { HotJson: [], PlayedJson: [], UserID: req.user["UserID"] });
+        }
+        spotifyApi.getTracks(ids, {}, function(err, a) {
+            if (err) {
+                console.error('Error retrieving tracks from Spotify:', err);
+                return res.status(500).send('Error retrieving tracks from Spotify');
+            }
+            console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
+            tracks.getPlayed(function(playedrows) {
+                console.log('Played tracks retrieved:', playedrows);
+                var ids2 = [];
+                for (var j = 0; j < playedrows.length; j++) ids2.push(playedrows[j]["SpotifyID"]);
+                spotifyApi.getTracks(ids2, {}, function(err, b) {
+                    if (err) {
+                        console.error('Error retrieving played tracks from Spotify:', err);
+                        return res.status(500).send('Error retrieving played tracks from Spotify');
+                    }
+                    console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
+                    res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"] });
+                });
+            });
         });
-      });
     });
-  });
 });
 
-router.post('/upvote', function (req, res){
-  console.log('Upvote request received');
-  console.log(req.body.SpotifyID);
-  tracks.upvote(req.body.SpotifyID, req.body.UserID);
-  return;
+router.post('/upvote', function(req, res) {
+    console.log('Upvote request received');
+    console.log(req.body.SpotifyID);
+    tracks.upvote(req.body.SpotifyID, req.body.UserID);
+    return;
 });
 
-router.post('/downvote', function (req, res){
-  console.log('Downvote request received');
-  console.log(req.body.SpotifyID);
-  tracks.downvote(req.body.SpotifyID, req.body.UserID);
-  return;
+router.post('/downvote', function(req, res) {
+    console.log('Downvote request received');
+    console.log(req.body.SpotifyID);
+    tracks.downvote(req.body.SpotifyID, req.body.UserID);
+    return;
 });
 
 export default router;
@@ -125,29 +125,29 @@ export default router;
 
 /* SPOTIFY */
 var spotifyApi = new SpotifyWebApi({
-  clientId  : process.env.SPOTIFY_CLIENT_ID,
-  clientSecret  : process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri : process.env.SPOTIFY_REDIRECT_URI//.replace(/\//g, "%2F").replace(/\:/g, "%3A")
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+    redirectUri: process.env.SPOTIFY_REDIRECT_URI //.replace(/\//g, "%2F").replace(/\:/g, "%3A")
 });
 spotifyApi.setAccessToken(process.env.ACCESS_TOKEN);
 
 router.get('/authorize', function(req, res) {
-  var scopes = ['playlist-modify-public', 'playlist-modify-private'];
-  var state = new Date().getTime();
-  var authoriseURL = spotifyApi.createAuthorizeURL(scopes, state);
-  res.redirect(authoriseURL);
+    var scopes = ['playlist-modify-public', 'playlist-modify-private'];
+    var state = new Date().getTime();
+    var authoriseURL = spotifyApi.createAuthorizeURL(scopes, state);
+    res.redirect(authoriseURL);
 });
 
 router.get('/callback', function(req, res) {
-  spotifyApi.authorizationCodeGrant(req.query.code)
-    .then(function(data) {
-      console.log(data.body['access_token']);
-      spotifyApi.setAccessToken(data.body['access_token']);
-      spotifyApi.setRefreshToken(data.body['refresh_token']);
-      return res.redirect('/');
-    }, function(err) {
-      return res.sent(err);
-    });
+    spotifyApi.authorizationCodeGrant(req.query.code)
+        .then(function(data) {
+            console.log(data.body['access_token']);
+            spotifyApi.setAccessToken(data.body['access_token']);
+            spotifyApi.setRefreshToken(data.body['refresh_token']);
+            return res.redirect('/');
+        }, function(err) {
+            return res.sent(err);
+        });
 });
 
 
