@@ -80,7 +80,13 @@ export async function initializeDatabase() {
     await conn.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
     await conn.query(`USE ${process.env.DB_NAME}`);
 
-    await conn.query('DROP TABLE IF EXISTS playlist_tracks, playlists, tracks, users');
+    // Drop tables in the correct order to avoid foreign key constraint issues
+    await conn.query('DROP TABLE IF EXISTS playlist_tracks');
+    await conn.query('DROP TABLE IF EXISTS playlists');
+    await conn.query('DROP TABLE IF EXISTS votes');
+    await conn.query('DROP TABLE IF EXISTS vote');
+    await conn.query('DROP TABLE IF EXISTS tracks');
+    await conn.query('DROP TABLE IF EXISTS users');
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -91,7 +97,6 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS tracks (
@@ -105,6 +110,19 @@ export async function initializeDatabase() {
         votes INT DEFAULT 1, 
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS votes (
+        id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+        TrackID INT NOT NULL,
+        UserID INT NOT NULL,
+        Play BOOLEAN NOT NULL default 0,
+        VoteType ENUM('upvote', 'downvote') NOT NULL,
+        UNIQUE (TrackID, UserID),
+        FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE
       )
     `);
 
@@ -139,6 +157,7 @@ export async function initializeDatabase() {
 })();
 await dbInitPromise;
 }
+
 // Function to find a user by username
 export async function findUserByUsername(username) {
     let conn;
