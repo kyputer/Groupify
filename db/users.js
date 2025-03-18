@@ -14,6 +14,7 @@ const users = {
 
 /// Creates a new user given a username and password
 async function register(email, username, password, cb) {
+    console.log(`Registering user: ${username}`);
     let hash = bcrypt.hashSync(password, 8);
     let conn;
 
@@ -32,6 +33,7 @@ async function register(email, username, password, cb) {
 /// Implements a passbook strategy
 /// This is used in app.js only as a `verify` function to resolve user credentials
 var strategy = function(username, password, cb) {
+    console.log(`Authenticating user: ${username}`);
     findByUsername(username, function(err, user) {
         if (err) return cb(err);
         if (user == null) return cb(null, null);
@@ -43,6 +45,7 @@ var strategy = function(username, password, cb) {
 /// Search for user by their id and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
 async function findById(id) {
+    console.log(`Finding user by ID: ${id}`);
     let conn;
     try {
         console.log(`Finding user by ID: ${id}`);
@@ -70,6 +73,7 @@ async function findById(id) {
 /// Search for user by their username and then pass the user row object (json)
 /// to the cb function. The user row has three keys: {"UserID":"", "Username", "Password"}
 async function findByUsername(username) {
+    console.log(`Finding user by username: ${username}`);
     let conn;
     try {
         console.log(`Finding user by username: ${username}`);

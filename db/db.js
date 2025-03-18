@@ -47,6 +47,7 @@ let dbInitPromise = null;
  * (Remember: The caller is responsible for releasing the connection.)
  */
 export async function getDBConnection() {
+  console.log('Getting database connection');
   let connection;
   try {
     connection = await pool.getConnection();
@@ -62,6 +63,7 @@ export async function getDBConnection() {
 }
 
 export async function initializeDatabase() {
+  console.log('Initializing database');
   // If already initialized, just return.
   if (dbInitialized) return;
   // If an initialization is already in progress, wait on it.
@@ -94,6 +96,7 @@ export async function initializeDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        SpotifyID VARCHAR(22) NOT NULL,
         title VARCHAR(255) NOT NULL,
         artist VARCHAR(255) NOT NULL,
         url VARCHAR(255) NOT NULL,

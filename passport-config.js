@@ -17,7 +17,7 @@ passport.use(new LocalStrategy(
         console.log('Incorrect password');
         return done(null, false, { message: 'Incorrect username or password.' });
       }
-      console.log('User authenticated successfully');
+      console.log('Authentication successful');
       return done(null, user);
     } catch (err) {
       console.error('Error during authentication:', err);
