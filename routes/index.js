@@ -1,9 +1,36 @@
 import express from 'express';
 import SpotifyWebApi from 'spotify-web-api-node';
-var spotifyApi = new SpotifyWebApi();
+
+var spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI
+});
+
+// router.get('/callback', function(req, res) {
+//   spotifyApi.authorizationCodeGrant(req.query.code)
+//     .then(function(data) {
+//       spotifyApi.setAccessToken(data.body['access_token']);
+//       spotifyApi.setRefreshToke(data.body['refresh_token']);
+//       return res.redirect('/');
+//     }, function(err) {
+//       return res.sent(err);
+//     });
+// });
+
+
+// Refresh access token initially
+spotifyApi.clientCredentialsGrant().then(
+  function(data) {
+    console.log('The access token has been retrieved successfully');
+    spotifyApi.setAccessToken(data.body['access_token']);
+  },
+  function(err) {
+    console.error('Failed to retrieve an access token', err);
+  }
+);
 
 const router = express.Router();
-
 
 // Middleware to log each request
 router.use((req, res, next) => {
@@ -25,8 +52,10 @@ function isLoggedIn(req, res, next) {
 /* GET login page. */
 router.get('/', function(req, res, next) {
   console.log('Rendering login page');
+  // res.send('<a href="/authorise">Authorise</a>');
   res.render('index', { title: 'Groupify' });
 });
+
 router.get('/login', function(req, res, next) {
   console.log('Rendering login page');
   res.render('index', { title: 'Groupify' });
@@ -38,6 +67,25 @@ router.get('/signup', function(req, res, next) {
   res.render('signup');
 });
 
+router.get('/authorise', function(req, res) {
+  var scopes = ['playlist-modify-public', 'playlist-modify-private'];
+  var state = new Date().getTime();
+  var authoriseURL = spotifyApi.createAuthorizeURL(scopes, state);
+  res.redirect(authoriseURL);
+});
+
+router.get('/callback', function(req, res) {
+  console.log("callback");
+  spotifyApi.authorizationCodeGrant(req.query.code)
+    .then(function(data) {
+      spotifyApi.setAccessToken(data.body['access_token']);
+      spotifyApi.setRefreshToken(data.body['refresh_token']);
+      return res.redirect('/');
+    }, function(err) {
+      return res.sent(err);
+    });
+});
+
 /* User authentication route */
 router.post('/login', passport.authenticate('local', {
   successRedirect: '/dashboard',
@@ -46,9 +94,10 @@ router.post('/login', passport.authenticate('local', {
 }));
 
 router.post('/search', async (req, res) => {
-  spotifyApi.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
   try {
     console.log(`Search request received for ${req.body.search} from ${req.user["id"]}`);
+    console.log(`Search request received for ${req.body.search} from ${req.user ? req.user["id"] : 'Anonymous'}`);
+
     const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
     const results = data.body.tracks.items;
 
@@ -60,7 +109,13 @@ router.post('/search', async (req, res) => {
     console.log(`Track found: ${track.name}, upvoting...`);
 
     // Upvote the first track found
-    await tracks.upvote(track, req.user["id"]);
+    if (req.user) {
+      await tracks.upvote(track, req.user["id"]);
+    }
+
+    // Add track to playlist
+    await spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USER_ID, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id]);
+    console.log(`Track added to playlist: ${track.name} by ${track.artists[0].name}`);
 
     // Redirect to the dashboard after upvoting
     res.redirect('/dashboard');
@@ -161,6 +216,7 @@ router.post('/downvote', async function(req, res) {
 });
 
 export default router;
+
 
 
 /* SPOTIFY CRAP B	OW
@@ -290,3 +346,4 @@ router.post('/store', function(req, res){
         return res.send('Could not refresh access token. You probably need to re-authorise yourself from your app\'s homepage.');
       });
 });*/
+
