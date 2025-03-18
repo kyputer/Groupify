@@ -128,12 +128,18 @@ router.post('/search', async (req, res) => {
 router.post('/signup', function(req, res) {
   console.log('Signup request received');
   console.log(req.body);
-  users.register(req.body.username, req.body.password, function(err, rows) {
+  users.register(req.body.username, req.body.password, function(err, user) {
     if (err) {
       console.error('Error during signup:', err);
       return res.status(500).json({ error: 'Signup failed' });
     }
-    res.redirect('/login');
+    req.login(user, function(loginErr) {
+      if (loginErr) {
+        console.error('Error during login after signup:', loginErr);
+        return res.status(500).json({ error: 'Login after signup failed' });
+      }
+      res.redirect('/dashboard');
+    });
   });
 });
 

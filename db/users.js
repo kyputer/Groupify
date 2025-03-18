@@ -20,9 +20,10 @@ async function register(username, password, cb) {
 
     try {
         conn = await getDBConnection();
-        await conn.query('INSERT INTO users (username, password_hash) VALUES (?,?);',
-            [username, hash]);
-                cb(null, {username: username});
+        const result = await conn.query('INSERT INTO users (username, password_hash) VALUES (?,?);', [username, hash]);
+        const userId = result.insertId; // Get the ID of the newly inserted user
+        const user = await findById(userId); // Retrieve the full user object
+        cb(null, user);
     } catch (err) {
         console.error("Database error, user registration:", err);
         cb(err);

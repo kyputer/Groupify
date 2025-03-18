@@ -47,7 +47,7 @@ let dbInitPromise = null;
  * (Remember: The caller is responsible for releasing the connection.)
  */
 export async function getDBConnection() {
-  console.log('Getting database connection');
+  // console.log('Getting database connection');
   let connection;
   try {
     connection = await pool.getConnection();
