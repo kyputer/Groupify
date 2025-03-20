@@ -1,9 +1,32 @@
 import express from 'express';
 import SpotifyWebApi from 'spotify-web-api-node';
-var spotifyApi = new SpotifyWebApi();
+
+var scopes = ['user-read-email', 'user-read-private','playlist-modify-public', 'playlist-modify-private'],
+  clientId = process.env.SPOTIFY_CLIENT_ID,
+  redirectUri = 'https://127.0.0.1:3000/callback';
+
+
+var spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI
+});
+
+
+spotifyApi.clientCredentialsGrant().then(
+  function(data) {
+    console.log('The access token has been retrieved successfully');
+    spotifyApi.setAccessToken(data.body['access_token']);
+    console.log(data.body)
+    spotifyApi.setRefreshToken(data.body['refresh_token']); // Store the refresh token
+    console.log(data.body['refresh_token'])
+  },
+  function(err) {
+    console.error('Failed to retrieve an access token', err);
+  }
+);
 
 const router = express.Router();
-
 
 // Middleware to log each request
 router.use((req, res, next) => {
@@ -15,7 +38,7 @@ router.use((req, res, next) => {
 >>>
 > 883 c08a85472cca43de7f4ea5820d7d712d2b4b9
 import tracks from '../db/tracks.js';
-import users from '../db/users.js';
+import users from '../db/users.js'; // Ensure this is imported to interact with the user database
 
 import passport from 'passport';
 
@@ -27,12 +50,17 @@ function isLoggedIn(req, res, next) {
 
 /* GET login page. */
 router.get('/', function(req, res, next) {
-    console.log('Rendering login page');
-    res.render('index', { title: 'Groupify' });
+  console.log('Rendering login page');
+  res.render('index', { title: 'Groupify' });
 });
+
 router.get('/login', function(req, res, next) {
-    console.log('Rendering login page');
-    res.render('index', { title: 'Groupify' });
+  if (req.isAuthenticated()) {
+    console.log('User is already logged in, redirecting to dashboard');
+    return res.redirect('/dashboard');
+  }
+  console.log('Rendering login page');
+  res.render('index', { title: 'Groupify' });
 });
 
 /* GET signup page */
@@ -41,19 +69,73 @@ router.get('/signup', function(req, res, next) {
     res.render('signup');
 });
 
+// router.get('/callback', async function(req, res) {
+  // console.log("Spotify callback");
+
+  // // Validate state parameter
+  // if (req.query.state !== req.session.spotifyAuthState) {
+  //   console.error('State mismatch during Spotify callback');
+  //   return res.status(400).send('State mismatch');
+  // }
+  // delete req.session.spotifyAuthState; // Clear state from session after validation
+
+  // try {
+  //   const data = await spotifyApi.authorizationCodeGrant(req.query.code);
+  //   const accessToken = data.body['access_token'];
+  //   const expiresIn = data.body['expires_in'];
+
+  //   // Set the access token on the Spotify API instance
+  //   spotifyApi.setAccessToken(accessToken);
+
+  //   // Store access token and expiration in session
+  //   req.session.spotifyAccessToken = accessToken;
+  //   req.session.spotifyAccessTokenExpiresAt = Date.now() + expiresIn * 1000;
+
+  //   // Mark the user as having authorized Spotify access
+  //   if (req.user) {
+  //     await users.updateSpotifyAuthorization(req.user.id, true);
+  //   }
+
+  //   console.log('Access token set successfully');
+  //   return res.redirect('/dashboard'); // Redirect to dashboard after successful authentication
+  // } catch (err) {
+  //   console.error('Error during authorization code grant:', err);
+  //   return res.status(500).send('Authorization failed');
+  // }
+// });
+
 /* User authentication route */
 router.post('/login', passport.authenticate('local', {
-    successRedirect: '/dashboard',
-    failureRedirect: '/login',
-    failureFlash: true
+  successRedirect: '/dashboard',
+  failureRedirect: '/login',
+  failureFlash: true
 }));
 
-router.post('/search', async(req, res) => {
-    spotifyApi.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
-    try {
-        console.log(`Search request received for ${req.body.search} from ${req.user["id"]}`);
-        const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
-        const results = data.body.tracks.items;
+router.post('/search', async (req, res) => {
+  //    spotifyApi.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
+  try {
+    console.log(`Search request received for ${req.body.search} from ${req.user ? req.user["id"] : 'Anonymous'}`);
+
+    // Refresh token before making API calls
+    // await refreshSpotifyToken();
+
+    const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
+    const results = data.body.tracks.items;
+    
+    // Helper function to refresh Spotify access token
+// async function refreshSpotifyToken() {
+//   try {
+//     const data = await spotifyApi.refreshAccessToken();
+//     console.log('Spotify access token refreshed successfully');
+//     spotifyApi.setAccessToken(data.body['access_token']);
+//     if (data.body['refresh_token']) {
+//       spotifyApi.setRefreshToken(data.body['refresh_token']); // Update refresh token if provided
+//     }
+//   } catch (err) {
+//     console.error('Error refreshing Spotify access token:', err);
+//     throw new Error('Failed to refresh Spotify access token');
+//   }
+// }
 
         if (results.length === 0) {
             console.log('No tracks found');
@@ -61,9 +143,14 @@ router.post('/search', async(req, res) => {
         }
         const track = results.find(item => item.type === 'track');
         console.log(`Track found: ${track.name}, upvoting...`);
+    // Upvote the first track found
+    if (req.user) {
+      await tracks.upvote(track, req.user["id"]);
+    }
 
-        // Upvote the first track found
-        await tracks.upvote(track, req.user["id"]);
+    // Add track to playlist
+    // TODO: await spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USER_ID, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id]);
+    console.log(`Track added to playlist: ${track.name} by ${track.artists[0].name}`);
 
         // Redirect to the dashboard after upvoting
         res.redirect('/dashboard');
@@ -74,15 +161,21 @@ router.post('/search', async(req, res) => {
 });
 
 router.post('/signup', function(req, res) {
-    console.log('Signup request received');
-    console.log(req.body);
-    users.register(req.body.username, req.body.password, function(err, rows) {
-        if (err) {
-            console.error('Error during signup:', err);
-            return res.status(500).json({ error: 'Signup failed' });
-        }
-        res.redirect('/login');
+  console.log('Signup request received');
+  console.log(req.body);
+  users.register(req.body.username, req.body.password, function(err, user) {
+    if (err) {
+      console.error('Error during signup:', err);
+      return res.status(500).json({ error: 'Signup failed' });
+    }
+    req.login(user, function(loginErr) {
+      if (loginErr) {
+        console.error('Error during login after signup:', loginErr);
+        return res.status(500).json({ error: 'Login after signup failed' });
+      }
+      res.redirect('/dashboard');
     });
+  });
 });
 
 router.post('/register', function(req, res) {
@@ -165,12 +258,6 @@ router.post('/downvote', async function(req, res) {
 
 export default router;
 
-
-===
-===
-= >>>
->>>
-> 883 c08a85472cca43de7f4ea5820d7d712d2b4b9
 /* SPOTIFY CRAP B	OW
                                                             //TODO
                                                             var spotifyApi = new SpotifyWebApi({st
