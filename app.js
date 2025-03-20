@@ -34,6 +34,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "secret", 
     resave: false,
     saveUninitialized: false,
+    cookie: { secure: false } // Adjust based on your environment
   })
 );
 

@@ -1,29 +1,25 @@
 import express from 'express';
 import SpotifyWebApi from 'spotify-web-api-node';
 
+var scopes = ['user-read-email', 'user-read-private','playlist-modify-public', 'playlist-modify-private'],
+  clientId = process.env.SPOTIFY_CLIENT_ID,
+  redirectUri = 'https://127.0.0.1:3000/callback';
+
+
 var spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
   redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
 
-// router.get('/callback', function(req, res) {
-//   spotifyApi.authorizationCodeGrant(req.query.code)
-//     .then(function(data) {
-//       spotifyApi.setAccessToken(data.body['access_token']);
-//       spotifyApi.setRefreshToke(data.body['refresh_token']);
-//       return res.redirect('/');
-//     }, function(err) {
-//       return res.sent(err);
-//     });
-// });
 
-
-// Refresh access token initially
 spotifyApi.clientCredentialsGrant().then(
   function(data) {
     console.log('The access token has been retrieved successfully');
     spotifyApi.setAccessToken(data.body['access_token']);
+    console.log(data.body)
+    spotifyApi.setRefreshToken(data.body['refresh_token']); // Store the refresh token
+    console.log(data.body['refresh_token'])
   },
   function(err) {
     console.error('Failed to retrieve an access token', err);
@@ -39,7 +35,7 @@ router.use((req, res, next) => {
 });
 
 import tracks from '../db/tracks.js';
-import users from '../db/users.js';
+import users from '../db/users.js'; // Ensure this is imported to interact with the user database
 
 import passport from 'passport';
 
@@ -57,6 +53,10 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/login', function(req, res, next) {
+  if (req.isAuthenticated()) {
+    console.log('User is already logged in, redirecting to dashboard');
+    return res.redirect('/dashboard');
+  }
   console.log('Rendering login page');
   res.render('index', { title: 'Groupify' });
 });
@@ -67,36 +67,69 @@ router.get('/signup', function(req, res, next) {
   res.render('signup');
 });
 
-router.get('/authorise', function(req, res) {
-  var scopes = ['playlist-modify-public', 'playlist-modify-private'];
-  var state = new Date().getTime();
-  var authoriseURL = spotifyApi.createAuthorizeURL(scopes, state);
-  res.redirect(authoriseURL);
-});
+// router.get('/callback', async function(req, res) {
+  // console.log("Spotify callback");
 
-router.get('/callback', function(req, res) {
-  console.log("callback");
-  spotifyApi.authorizationCodeGrant(req.query.code)
-    .then(function(data) {
-      spotifyApi.setAccessToken(data.body['access_token']);
-      spotifyApi.setRefreshToken(data.body['refresh_token']);
-      return res.redirect('/');
-    }, function(err) {
-      return res.sent(err);
-    });
-});
+  // // Validate state parameter
+  // if (req.query.state !== req.session.spotifyAuthState) {
+  //   console.error('State mismatch during Spotify callback');
+  //   return res.status(400).send('State mismatch');
+  // }
+  // delete req.session.spotifyAuthState; // Clear state from session after validation
+
+  // try {
+  //   const data = await spotifyApi.authorizationCodeGrant(req.query.code);
+  //   const accessToken = data.body['access_token'];
+  //   const expiresIn = data.body['expires_in'];
+
+  //   // Set the access token on the Spotify API instance
+  //   spotifyApi.setAccessToken(accessToken);
+
+  //   // Store access token and expiration in session
+  //   req.session.spotifyAccessToken = accessToken;
+  //   req.session.spotifyAccessTokenExpiresAt = Date.now() + expiresIn * 1000;
+
+  //   // Mark the user as having authorized Spotify access
+  //   if (req.user) {
+  //     await users.updateSpotifyAuthorization(req.user.id, true);
+  //   }
+
+  //   console.log('Access token set successfully');
+  //   return res.redirect('/dashboard'); // Redirect to dashboard after successful authentication
+  // } catch (err) {
+  //   console.error('Error during authorization code grant:', err);
+  //   return res.status(500).send('Authorization failed');
+  // }
+// });
 
 /* User authentication route */
 router.post('/login', passport.authenticate('local', {
-  successRedirect: '/dashboard',
+successRedirect: '/dashboard',
   failureRedirect: '/login',
   failureFlash: true
 }));
 
+// Helper function to refresh Spotify access token
+// async function refreshSpotifyToken() {
+//   try {
+//     const data = await spotifyApi.refreshAccessToken();
+//     console.log('Spotify access token refreshed successfully');
+//     spotifyApi.setAccessToken(data.body['access_token']);
+//     if (data.body['refresh_token']) {
+//       spotifyApi.setRefreshToken(data.body['refresh_token']); // Update refresh token if provided
+//     }
+//   } catch (err) {
+//     console.error('Error refreshing Spotify access token:', err);
+//     throw new Error('Failed to refresh Spotify access token');
+//   }
+// }
+
 router.post('/search', async (req, res) => {
   try {
-    console.log(`Search request received for ${req.body.search} from ${req.user["id"]}`);
     console.log(`Search request received for ${req.body.search} from ${req.user ? req.user["id"] : 'Anonymous'}`);
+
+    // Refresh token before making API calls
+    // await refreshSpotifyToken();
 
     const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
     const results = data.body.tracks.items;
@@ -114,7 +147,7 @@ router.post('/search', async (req, res) => {
     }
 
     // Add track to playlist
-    await spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USER_ID, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id]);
+    // TODO: await spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USER_ID, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id]);
     console.log(`Track added to playlist: ${track.name} by ${track.artists[0].name}`);
 
     // Redirect to the dashboard after upvoting
@@ -222,134 +255,4 @@ router.post('/downvote', async function(req, res) {
 });
 
 export default router;
-
-
-
-/* SPOTIFY CRAP B	OW
-//TODO
-var spotifyApi = new SpotifyWebApi({st
-  cl	entId	: process.env.SPOTIFY_CLIENT_KEY,
-  clientSecret	: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri	: process.env.SPOTIFY_REDIRECT_URI
-});
-
-router.get('/', function(req, res) {
-  if(spotifyApi.getAccessToken()){
-    res.redirect('' + process.env.SLACK_URI + '');
-  }
-  return res.send('<a href="/authorise">Authorise</a>');
-});
-
-router.get('/authorise', function(req, res) {
-  var scopes = ['playlist-modify-public', 'playlist-modify-private'];
-  var state = new Date().getTime();
-  var authoriseURL = spotifyApi.createAuthorizeURL(scopes, state);
-  res.redirect(authoriseURL);
-});
-
-router.get('/callback', function(req, res) {
-  spotifyApi.authorizationCodeGrant(req.query.code)
-    .then(function(data) {
-      spotifyApi.setAccessToken(data.body['access_token']);
-      spotifyApi.setRefreshToke(data.body['refresh_token']);
-      return res.redirect('/');
-    }, function(err) {
-      return res.sent(err);
-    });
-});
-
-router.use('/store', function(req, res, next){
-  if(req.body.token !== process.env.SLACK_TOKEN) {
-    return res.status(500).send('Cross site request forgerizzle!');
-  }
-  next();
-});
-
-router.post('/store', function(req, res){
-  spotifyApi.refreshAccessToken()
-    .then(function(data){
-      spotifyApi.setAccessToken(data.body['access_token']);
-      if(data.body['refresh_token']){
-        SpotifyWebApi.setRefreshToken(data.body['refresh_token']);
-      }
-      if(req.body.text.trim().length===0 || req.body.text.trim() === 'help'){
-        return res.send('Enter then name of a song ad artist separated by a "-"');
-      }
-      if(req.body.text.indexOf(' - ') === -1){
-        var query = 'track:' + req.body.text;
-      }else{
-        var pieces = req.body.text.split(' - ');
-        var query = 'artist:' + pieces[0].trim() + ' track:' + pieces[1].trim();
-      }
-      spotifyApi.searchTracks(query)
-        .then(function(data){
-          var results = data.body.tracks.items;
-          if(results.length === 0){
-            return res.send('Could not locate track.');
-          }
-          var track = results[0];
-          spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USERNAME, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id])
-            .then(function(data){
-              return res.send({'response_type': 'in_channel', 'text': 'Added track: *<' + track.name + '>* by *' + track.artists[0].name + '*'});
-            }, function(err){
-              return res.send(err.message);
-        });
-      }, function(err){
-        return res.send(err.message);
-      });
-      }, function(err){
-        return res.send('Could not refresh access token. You probably need to re-authorise yourself from your app\'s homepage.');
-      });
-  });
-
-router.get('/', function(req, res) {
-  if(spotifyApi.getAccessToken()){
-//TODO		//res.redirect('' + process.env
-  }
-  return res.send('<a hre		authorise">Authorise</a>');
-});
-
-router.use('/store', funct		req, res, next){
-  if(req.body.token !== process.env.SLACK_T		) {
-    return res.status(500).send('Cross site request forgerizzle!');
-  }
-  next();
-});
-
-router.post('/store', function(req, res){
-  spotifyApi.refreshAccessToken()
-    .then(function(data){
-      spotifyApi.setAccessToken(data.body['access_token']);
-      if(data.body['refresh_token']){
-        SpotifyWebApi.setRefreshToken(data.body['refresh_token']);
-      }
-      if(req.body.text.trim().length===0 || req.body.text.trim() === 'help'){
-        return res.send('Enter then name of a song ad artist separated by a "-"');
-      }
-      if(req.body.text.indexOf(' - ') === -1){
-        var query = 'track:' + req.body.text;
-      }else{
-        var pieces = req.body.text.split(' - ');
-        var query = 'artist:' + pieces[0].trim() + ' track:' + pieces[1].trim();
-      }
-      spotifyApi.searchTracks(query)
-        .then(function(data){
-          var results = data.body.tracks.items;
-          if(results.length === 0){
-            return res.send('Could not locate track.');
-          }
-          var track = results[0];
-          spotifyApi.addTracksToPlaylist(process.env.SPOTIFY_USERNAME, process.env.SPOTIFY_PLAYLIST_ID, ['spotify:track:' + track.id])
-            .then(function(data){
-              return res.send({'response_type': 'in_channel', 'text': 'Added track: *<' + track.name + '>* by *' + track.artists[0].name + '*'});
-            }, function(err){
-              return res.send(err.message);
-        });
-      }, function(err){
-        return res.send(err.message);
-      });
-      }, function(err){
-        return res.send('Could not refresh access token. You probably need to re-authorise yourself from your app\'s homepage.');
-      });
-});*/
 
