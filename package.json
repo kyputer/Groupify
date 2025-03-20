@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "build": "gulp build",
+    "build": "gulp build && npm run build:semantic",
+    "build:semantic": "cd semantic && gulp build",
     "install-ui": "gulp install"
   },
   "engines": {

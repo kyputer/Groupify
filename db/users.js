@@ -13,15 +13,17 @@ const users = {
 }
 
 /// Creates a new user given a username and password
-async function register(email, username, password, cb) {
+async function register(username, password, cb) {
     console.log(`Registering user: ${username}`);
     let hash = bcrypt.hashSync(password, 8);
     let conn;
 
     try {
         conn = await getDBConnection();
-        await conn.query('INSERT INTO users (email, username, password_hash) VALUES (?,?,?);', [email, username, hash]);
-        cb({ email: email }, { username: username });
+        const result = await conn.query('INSERT INTO users (username, password_hash) VALUES (?,?);', [username, hash]);
+        const userId = result.insertId; // Get the ID of the newly inserted user
+        const user = await findById(userId); // Retrieve the full user object
+        cb(null, user);
     } catch (err) {
         console.error("Database error, user registration:", err);
         cb(err);

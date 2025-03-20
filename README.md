@@ -11,13 +11,9 @@ Ensure to configure this file with Spotify and MariaDB credentials prior to depl
 - grant all privileges on groupify.* to groupify@localhost;
 - flush privileges;
 
-
 ```
 USERNAME=groupify
 PASSWORD=
-
-SLACK_TOKEN=
-SLACK_URI=
 
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
