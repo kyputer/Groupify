@@ -67,40 +67,60 @@ router.get('/signup', function(req, res, next) {
     res.render('signup');
 });
 
-// router.get('/callback', async function(req, res) {
-// console.log("Spotify callback");
+// Route to initiate Spotify authorization
+router.get('/authorise', (req, res) => {
+    const scopes = ['user-read-email', 'user-read-private', 'playlist-modify-public', 'playlist-modify-private'];
+    const state = new Date().getTime().toString(); // Generate a unique state
+    const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
 
-// // Validate state parameter
-// if (req.query.state !== req.session.spotifyAuthState) {
-//   console.error('State mismatch during Spotify callback');
-//   return res.status(400).send('State mismatch');
-// }
-// delete req.session.spotifyAuthState; // Clear state from session after validation
+    // Store state in session for validation
+    req.session.spotifyAuthState = state;
 
-// try {
-//   const data = await spotifyApi.authorizationCodeGrant(req.query.code);
-//   const accessToken = data.body['access_token'];
-//   const expiresIn = data.body['expires_in'];
+    console.log('Generated state:', state); // Debugging
+    res.redirect(authorizeURL);
+});
 
-//   // Set the access token on the Spotify API instance
-//   spotifyApi.setAccessToken(accessToken);
+// Callback route to handle Spotify's response
+router.get('/callback', async (req, res) => {
+    const { code, state } = req.query;
 
-//   // Store access token and expiration in session
-//   req.session.spotifyAccessToken = accessToken;
-//   req.session.spotifyAccessTokenExpiresAt = Date.now() + expiresIn * 1000;
+    console.log('Received state:', state); // Debugging
+    console.log('Stored state:', req.session.spotifyAuthState); // Debugging
 
-//   // Mark the user as having authorized Spotify access
-//   if (req.user) {
-//     await users.updateSpotifyAuthorization(req.user.id, true);
-//   }
+    // Validate state parameter
+    if (state !== req.session.spotifyAuthState) {
+        console.error('State mismatch during Spotify callback');
+        return res.status(400).send('State mismatch');
+    }
+    delete req.session.spotifyAuthState; // Clear state from session after validation
 
-//   console.log('Access token set successfully');
-//   return res.redirect('/dashboard'); // Redirect to dashboard after successful authentication
-// } catch (err) {
-//   console.error('Error during authorization code grant:', err);
-//   return res.status(500).send('Authorization failed');
-// }
-// });
+    try {
+        const data = await spotifyApi.authorizationCodeGrant(code);
+
+        // Extract access and refresh tokens
+        const accessToken = data.body['access_token'];
+        const refreshToken = data.body['refresh_token'];
+        const expiresIn = data.body['expires_in'];
+        console.log("accessToken: %j", accessToken);
+        console.log("refreshToken: %j", refreshToken);
+        console.log("expiresIn: %j", expiresIn);
+
+        // Set tokens on the Spotify API instance
+        spotifyApi.setAccessToken(accessToken);
+        spotifyApi.setRefreshToken(refreshToken);
+
+        // Store tokens in session or database
+        req.session.spotifyAccessToken = accessToken;
+        req.session.spotifyRefreshToken = refreshToken;
+        req.session.spotifyAccessTokenExpiresAt = Date.now() + expiresIn * 1000;
+
+        console.log('Access and refresh tokens set successfully');
+        res.redirect('/dashboard'); // Redirect to the dashboard
+    } catch (err) {
+        console.error('Error during authorization code grant:', err);
+        res.status(500).send('Authorization failed');
+    }
+});
 
 /* User authentication route */
 router.post('/login', passport.authenticate('local', {
@@ -109,27 +129,9 @@ router.post('/login', passport.authenticate('local', {
     failureFlash: true
 }));
 
-// Helper function to refresh Spotify access token
-// async function refreshSpotifyToken() {
-//   try {
-//     const data = await spotifyApi.refreshAccessToken();
-//     console.log('Spotify access token refreshed successfully');
-//     spotifyApi.setAccessToken(data.body['access_token']);
-//     if (data.body['refresh_token']) {
-//       spotifyApi.setRefreshToken(data.body['refresh_token']); // Update refresh token if provided
-//     }
-//   } catch (err) {
-//     console.error('Error refreshing Spotify access token:', err);
-//     throw new Error('Failed to refresh Spotify access token');
-//   }
-// }
-
 router.post('/search', async(req, res) => {
     try {
         console.log(`Search request received for ${req.body.search} from ${req.user ? req.user["id"] : 'Anonymous'}`);
-
-        // Refresh token before making API calls
-        // await refreshSpotifyToken();
 
         const data = await spotifyApi.searchTracks(`track:${req.body.search}`);
         const results = data.body.tracks.items;
@@ -188,10 +190,52 @@ router.post('/register', function(req, res) {
     });
 });
 
+/* Helper function to refresh Spotify access token */
+async function refreshSpotifyToken(req, res, next) {
+    try {
+        // Check if the access token is about to expire
+        if (Date.now() >= req.session.spotifyAccessTokenExpiresAt) {
+            console.log('Access token expired, refreshing...');
+            const data = await spotifyApi.refreshAccessToken();
+            console.log('Spotify access token refreshed successfully');
+
+            // Update the Spotify API instance and session with the new token
+            spotifyApi.setAccessToken(data.body['access_token']);
+            req.session.spotifyAccessToken = data.body['access_token'];
+            req.session.spotifyAccessTokenExpiresAt = Date.now() + data.body['expires_in'] * 1000;
+
+            console.log('New access token:', data.body['access_token']);
+        }
+        next(); // Proceed to the next middleware or route handler
+    } catch (err) {
+        console.error('Error refreshing Spotify access token:', err);
+        res.status(500).send('Failed to refresh Spotify access token');
+    }
+}
+
+// Middleware to ensure the access token is valid
+router.use(async (req, res, next) => {
+    if (req.session.spotifyRefreshToken) {
+        await refreshSpotifyToken(req, res, next);
+    } else {
+        next(); // No refresh token available, proceed without refreshing
+    }
+});
+
+
+
 /* Load the dashboard */
-router.get('/dashboard', isLoggedIn, function(req, res) {
-    console.log('Loading dashboard');
-    tracks.getHot(function(rows) {
+router.get('/dashboard', isLoggedIn, async (req, res) => {
+    try {
+        // Ensure the token is valid before making Spotify API calls
+        await refreshSpotifyToken(req, res, () => {});
+
+        // Use the Spotify API with the refreshed token
+        const data = await spotifyApi.getMe();
+        console.log('User data:', data.body);
+        /* Load the dashboard */
+        console.log('Loading dashboard');
+        tracks.getHot(function(rows) {
         console.log('Hot tracks retrieved:', rows);
         var ids = [];
         for (var i = 0; i < rows.length; i++) ids.push(rows[i]["SpotifyID"]);
@@ -199,31 +243,36 @@ router.get('/dashboard', isLoggedIn, function(req, res) {
             console.log('No hot tracks found');
             return res.render('dashboard', { HotJson: [], PlayedJson: [], UserID: req.user["UserID"] });
         }
+
         spotifyApi.getTracks(ids, {}, function(err, a) {
-            if (err) {
-                console.error('Error retrieving tracks from Spotify:', err);
-                return res.status(500).send('Error retrieving tracks from Spotify');
-            }
-            console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
-            tracks.getPlayed(function(playedrows) {
-                console.log('Played tracks retrieved:', playedrows);
-                var ids2 = [];
-                for (var j = 0; j < playedrows.length; j++) ids2.push(playedrows[j]["SpotifyID"]);
-                if (ids2.length == 0) {
-                    console.log('No played tracks found');
-                    return res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: [], UserID: req.user["UserID"] });
-                }
-                spotifyApi.getTracks(ids2, {}, function(err, b) {
-                    if (err) {
-                        console.error('Error retrieving played tracks from Spotify:', err);
-                        return res.status(500).send('Error retrieving played tracks from Spotify');
-                    }
-                    console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
-                    res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"] });
-                });
-            });
-        });
-    });
+          if (err) {
+              console.error('Error retrieving tracks from Spotify:', err);
+              return res.status(500).send('Error retrieving tracks from Spotify');
+          }
+          console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
+          tracks.getPlayed(function(playedrows) {
+              console.log('Played tracks retrieved:', playedrows);
+              var ids2 = [];
+              for (var j = 0; j < playedrows.length; j++) ids2.push(playedrows[j]["SpotifyID"]);
+              if (ids2.length == 0) {
+                  console.log('No played tracks found');
+                  return res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: [], UserID: req.user["UserID"] });
+              }
+              spotifyApi.getTracks(ids2, {}, function(err, b) {
+                  if (err) {
+                      console.error('Error retrieving played tracks from Spotify:', err);
+                      return res.status(500).send('Error retrieving played tracks from Spotify');
+                  }
+                  console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
+                  res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"] });
+              });
+          });
+      });
+  });
+    } catch (err) {
+        console.error('Error loading dashboard:', err);
+        res.status(500).send('Failed to load dashboard');
+    }
 });
 
 router.post('/upvote', async function(req, res) {

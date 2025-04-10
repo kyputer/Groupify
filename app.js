@@ -14,7 +14,7 @@ import flash from 'connect-flash'
 import './passport-config.js'; // Ensure this line is added to import the Passport configuration
 
 
-import { getDBConnection, findUserByUsername, initializeDatabase, pool} from "./db/db.js";
+import { findUserByUsername, initializeDatabase} from "./db/db.js";
 import { updateForeignPlaylist } from './updateForeignPlaylist.js';
 
 
