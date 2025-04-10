@@ -19,7 +19,7 @@ spotifyApi.clientCredentialsGrant().then(
         spotifyApi.setAccessToken(data.body['access_token']);
         console.log(data.body)
         spotifyApi.setRefreshToken(data.body['refresh_token']); // Store the refresh token
-        console.log(data.body['refresh_token'])
+        console.log("refresh token: ", data.body['refresh_token'])
     },
     function(err) {
         console.error('Failed to retrieve an access token', err);
