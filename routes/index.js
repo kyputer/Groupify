@@ -209,20 +209,24 @@ async function refreshSpotifyToken(req, res, next) {
         next(); // Proceed to the next middleware or route handler
     } catch (err) {
         console.error('Error refreshing Spotify access token:', err);
-        res.status(500).send('Failed to refresh Spotify access token');
+        throw new Error('Failed to refresh Spotify access token');
     }
 }
 
 // Middleware to ensure the access token is valid
 router.use(async (req, res, next) => {
-    if (req.session.spotifyRefreshToken) {
-        await refreshSpotifyToken(req, res, next);
-    } else {
-        next(); // No refresh token available, proceed without refreshing
+    try {
+        if (req.session.spotifyRefreshToken) {
+            await refreshSpotifyToken(req, res, next);
+        } else {
+            console.log('No refresh token available, redirecting to /authorise');
+            return res.redirect('/authorise'); // Redirect to reauthenticate
+        }
+    } catch (err) {
+        console.error('Error in token middleware:', err);
+        return res.redirect('/authorise'); // Redirect on error
     }
 });
-
-
 
 /* Load the dashboard */
 router.get('/dashboard', isLoggedIn, async (req, res) => {
@@ -231,47 +235,50 @@ router.get('/dashboard', isLoggedIn, async (req, res) => {
         await refreshSpotifyToken(req, res, () => {});
 
         // Use the Spotify API with the refreshed token
-        const data = await spotifyApi.getMe();
-        console.log('User data:', data.body);
-        /* Load the dashboard */
-        console.log('Loading dashboard');
-        tracks.getHot(function(rows) {
-        console.log('Hot tracks retrieved:', rows);
-        var ids = [];
-        for (var i = 0; i < rows.length; i++) ids.push(rows[i]["SpotifyID"]);
-        if (ids.length == 0) {
-            console.log('No hot tracks found');
-            return res.render('dashboard', { HotJson: [], PlayedJson: [], UserID: req.user["UserID"] });
-        }
+        const userData = await spotifyApi.getMe();
+        console.log('User data:', userData.body);
 
-        spotifyApi.getTracks(ids, {}, function(err, a) {
-          if (err) {
-              console.error('Error retrieving tracks from Spotify:', err);
-              return res.status(500).send('Error retrieving tracks from Spotify');
-          }
-          console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
-          tracks.getPlayed(function(playedrows) {
-              console.log('Played tracks retrieved:', playedrows);
-              var ids2 = [];
-              for (var j = 0; j < playedrows.length; j++) ids2.push(playedrows[j]["SpotifyID"]);
-              if (ids2.length == 0) {
-                  console.log('No played tracks found');
-                  return res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: [], UserID: req.user["UserID"] });
-              }
-              spotifyApi.getTracks(ids2, {}, function(err, b) {
-                  if (err) {
-                      console.error('Error retrieving played tracks from Spotify:', err);
-                      return res.status(500).send('Error retrieving played tracks from Spotify');
-                  }
-                  console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
-                  res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"] });
-              });
-          });
-      });
-  });
+        // Fetch hot and played tracks
+        tracks.getHot(function(rows) {
+            console.log('Hot tracks retrieved:', rows);
+            const ids = rows.map(row => row["SpotifyID"]);
+
+            if (ids.length === 0) {
+                console.log('No hot tracks found');
+                return res.render('dashboard', { HotJson: [], PlayedJson: [], UserID: req.user["UserID"] });
+            }
+
+            spotifyApi.getTracks(ids, {}, function(err, a) {
+                if (err) {
+                    console.error('Error retrieving tracks from Spotify:', err);
+                    return res.status(500).send('Error retrieving tracks from Spotify');
+                }
+                console.log('Hot tracks retrieved from Spotify:', a["body"]["tracks"]);
+
+                tracks.getPlayed(function(playedrows) {
+                    console.log('Played tracks retrieved:', playedrows);
+                    const ids2 = playedrows.map(row => row["SpotifyID"]);
+
+                    if (ids2.length === 0) {
+                        console.log('No played tracks found');
+                        return res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: [], UserID: req.user["UserID"] });
+                    }
+
+                    spotifyApi.getTracks(ids2, {}, function(err, b) {
+                        if (err) {
+                            console.error('Error retrieving played tracks from Spotify:', err);
+                            return res.status(500).send('Error retrieving played tracks from Spotify');
+                        }
+                        console.log('Played tracks retrieved from Spotify:', b["body"]["tracks"]);
+                        res.render('dashboard', { HotJson: a["body"]["tracks"], HotVotes: rows, PlayedJson: b["body"]["tracks"], UserID: req.user["UserID"] });
+                    });
+                });
+            });
+        });
     } catch (err) {
         console.error('Error loading dashboard:', err);
-        res.status(500).send('Failed to load dashboard');
+        // res.status(500).send('Failed to load dashboard');
+        res.redirect('/authorise'); // Redirect to reauthenticate if an error occurs
     }
 });
 
