@@ -8,99 +8,147 @@ const tracks = {
   getNext,
   getNew,
   getHot,
-  getPlayed
+  getPlayed,
+  createPlaylist,
+  addTrackToPlaylist,
+  getPlaylistVotes
 };
 
-async function upvote(track, userID) {
-  console.log(`Upvoting track: ${track.id} by user: ${userID}`);
-  let conn;
-  try {
-    conn = await getDBConnection();
-    console.log('Database connection established');
+async function upvote(track, userID, playlistID = 1) {
+    console.log(`Upvoting track: ${track.id} by user: ${userID} in playlist: ${playlistID}`);
+    let conn;
+    try {
+        conn = await getDBConnection();
+        console.log('Database connection established');
 
-    const rows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
-    console.log('Query executed:', rows);
-    if (rows.length == 0) {
-      await conn.query('INSERT INTO tracks (SpotifyID, title, artist, url, user_id, votes) VALUES (?,?,?,?,?,?);', [track.id, track.name, track.artists[0].name, track.href, userID, 1]);
-      console.log('Track inserted');
-      const trackID = (await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]))[0].id;
-      await conn.query('INSERT INTO votes (TrackID, UserID, VoteType) VALUES (?,?,?);', [trackID, userID, 'upvote']);
-      console.log('Vote inserted as upvote');
-    } else {
-      const trackID = rows[0]["id"];
-      const voterows = await conn.query('SELECT * FROM votes WHERE TrackID=? AND UserID=?;', [trackID, userID]);
-      console.log('Vote query executed:', voterows);
-      if (voterows.length > 0) {
-        if (voterows[0].VoteType === 'upvote') {
-          console.log('User already upvoted this track');
-          return; // User already upvoted this track
+        // Ensure the default playlist exists
+        await conn.query(`
+            INSERT IGNORE INTO playlists (PlaylistID, name, Description, user_id)
+            VALUES (1, 'Default Playlist', 'This is the default playlist.', 1)
+        `);
+
+        // Check if the track exists
+        const trackRows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
+        let trackID;
+        if (trackRows.length === 0) {
+            // Insert the track if it doesn't exist
+            const result = await conn.query(
+                'INSERT INTO tracks (SpotifyID, title, artist, url, user_id, votes) VALUES (?,?,?,?,?,?);',
+                [track.id, track.name, track.artists[0].name, track.href, userID, 1]
+            );
+            trackID = result.insertId;
+            console.log('Track inserted:', trackID);
         } else {
-          await conn.query('UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=?;', ['upvote', trackID, userID]);
-          await conn.query('UPDATE tracks SET votes=votes+2 WHERE id=?;', [trackID]);
-          console.log('Vote updated to upvote');
+            trackID = trackRows[0].id;
         }
-      } else {
-        await conn.query('INSERT INTO votes (TrackID, UserID, VoteType) VALUES (?,?,?);', [trackID, userID, 'upvote']);
-        await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
-        console.log('Vote inserted as upvote');
-      }
+
+        // Ensure the track is associated with the playlist
+        await conn.query(
+            'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
+            [playlistID, trackID]
+        );
+
+        // Check if the user has already voted for this track in the playlist
+        const voteRows = await conn.query(
+            'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
+            [trackID, userID, playlistID]
+        );
+        if (voteRows.length > 0) {
+            if (voteRows[0].VoteType === 'upvote') {
+                console.log('User already upvoted this track in this playlist');
+                return; // User already upvoted this track in this playlist
+            } else {
+                // Update the vote to upvote
+                await conn.query(
+                    'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
+                    ['upvote', trackID, userID, playlistID]
+                );
+                await conn.query('UPDATE tracks SET votes=votes+2 WHERE id=?;', [trackID]);
+                console.log('Vote updated to upvote');
+            }
+        } else {
+            // Insert a new vote
+            await conn.query(
+                'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
+                [trackID, userID, 'upvote', playlistID]
+            );
+            await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
+            console.log('Vote inserted as upvote');
+        }
+    } catch (err) {
+        console.error("Database error:", err);
+    } finally {
+        if (conn) {
+            try {
+                await conn.release();
+                console.log('Database connection released');
+            } catch (releaseErr) {
+                console.error('Error releasing database connection:', releaseErr);
+            }
+        }
     }
-  } catch (err) {
-    console.error("Database error:", err);
-  } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
-  }
 }
 
-async function downvote(spotifyID, userID) {
-  console.log(`Downvoting track: ${spotifyID} by user: ${userID}`);
-  let conn;
-  try {
-    conn = await getDBConnection();
-    console.log('Database connection established');
+async function downvote(SpotifyID, userID, playlistID = 1) {
+    console.log(`Downvoting track: ${SpotifyID} by user: ${userID} in playlist: ${playlistID}`);
+    let conn;
+    try {
+        conn = await getDBConnection();
+        console.log('Database connection established');
 
-    const rows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [spotifyID]);
-    console.log('Query executed:', rows);
-    if (rows.length === 0) {
-      console.log('Track not found');
-      return; // Don't downvote a record if one doesn't exist
+        // Fetch the track details using SpotifyID
+        const trackRows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [SpotifyID]);
+        if (trackRows.length === 0) {
+            console.log('Track not found');
+            return; // Don't downvote a record if one doesn't exist
+        }
+        const trackID = trackRows[0].id;
+
+        // Ensure the track is associated with the playlist
+        await conn.query(
+            'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
+            [playlistID, trackID]
+        );
+
+        // Check if the user has already voted for this track in the playlist
+        const voteRows = await conn.query(
+            'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
+            [trackID, userID, playlistID]
+        );
+        if (voteRows.length > 0) {
+            if (voteRows[0].VoteType === 'downvote') {
+                console.log('User already downvoted this track in this playlist');
+                return; // User already downvoted this track in this playlist
+            } else {
+                // Update the vote to downvote
+                await conn.query(
+                    'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
+                    ['downvote', trackID, userID, playlistID]
+                );
+                await conn.query('UPDATE tracks SET votes=votes-2 WHERE id=?;', [trackID]);
+                console.log('Vote updated to downvote');
+            }
+        } else {
+            // Insert a new vote
+            await conn.query(
+                'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
+                [trackID, userID, 'downvote', playlistID]
+            );
+            await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
+            console.log('Vote inserted as downvote');
+        }
+    } catch (err) {
+        console.error("Database error:", err);
+    } finally {
+        if (conn) {
+            try {
+                await conn.release();
+                console.log('Database connection released');
+            } catch (releaseErr) {
+                console.error('Error releasing database connection:', releaseErr);
+            }
+        }
     }
-    const trackID = rows[0]["id"];
-    const voterows = await conn.query('SELECT * FROM votes WHERE TrackID=? AND UserID=?;', [trackID, userID]);
-    console.log('Vote query executed:', voterows);
-    if (voterows.length > 0) {
-      if (voterows[0].VoteType === 'downvote') {
-        console.log('User already downvoted this track');
-        return; // User already downvoted this track
-      } else {
-        await conn.query('UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=?;', ['downvote', trackID, userID]);
-        await conn.query('UPDATE tracks SET votes=votes-2 WHERE id=?;', [trackID]);
-        console.log('Vote updated to downvote');
-      }
-    } else {
-      await conn.query('INSERT INTO votes (TrackID, UserID, VoteType) VALUES (?,?,?);', [trackID, userID, 'downvote']);
-      await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
-      console.log('Vote inserted as downvote');
-    }
-  } catch (err) {
-    console.error("Database error:", err);
-  } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
-  }
 }
 
 var pushBlacklist = async function(trackID) {
@@ -205,6 +253,50 @@ async function getPlayed(callback) {
       }
     }
   }
+}
+
+// Create a new playlist
+async function createPlaylist(name, description) {
+    const conn = await getDBConnection();
+    try {
+        const result = await conn.query(
+            'INSERT INTO playlists (Name, Description) VALUES (?, ?)',
+            [name, description]
+        );
+        console.log('Playlist created:', result.insertId);
+        return result.insertId;
+    } finally {
+        conn.release();
+    }
+}
+
+// Add a track to a playlist
+async function addTrackToPlaylist(playlistID, trackID) {
+    const conn = await getDBConnection();
+    try {
+        await conn.query(
+            'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?)',
+            [playlistID, trackID]
+        );
+        console.log(`Track ${trackID} added to playlist ${playlistID}`);
+    } finally {
+        conn.release();
+    }
+}
+
+// Get votes for a specific playlist
+async function getPlaylistVotes(playlistID, callback) {
+    const conn = await getDBConnection();
+    try {
+        const rows = await conn.query(
+            'SELECT v.*, t.* FROM votes v JOIN tracks t ON v.TrackID = t.id WHERE v.PlaylistID = ?',
+            [playlistID]
+        );
+        console.log('Playlist votes retrieved:', rows);
+        callback(rows);
+    } finally {
+        conn.release();
+    }
 }
 
 // Define exports

@@ -81,12 +81,14 @@ export async function initializeDatabase() {
     await conn.query(`USE ${process.env.DB_NAME}`);
 
     // Drop tables in the correct order to avoid foreign key constraint issues
+    await conn.query('SET FOREIGN_KEY_CHECKS=0')
     await conn.query('DROP TABLE IF EXISTS playlist_tracks');
+    await conn.query('DROP TABLE IF EXISTS users');
     await conn.query('DROP TABLE IF EXISTS playlists');
     await conn.query('DROP TABLE IF EXISTS votes');
     await conn.query('DROP TABLE IF EXISTS vote');
     await conn.query('DROP TABLE IF EXISTS tracks');
-    await conn.query('DROP TABLE IF EXISTS users');
+    await conn.query('SET FOREIGN_KEY_CHECKS=1');  
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -120,7 +122,6 @@ export async function initializeDatabase() {
         UserID INT NOT NULL,
         Play BOOLEAN NOT NULL default 0,
         VoteType ENUM('upvote', 'downvote') NOT NULL,
-        UNIQUE (TrackID, UserID),
         FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE
       )
@@ -128,22 +129,36 @@ export async function initializeDatabase() {
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS playlists (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        PlaylistID INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        Description TEXT DEFAULT NULL,
         user_id INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+ 
+    await conn.query(`
+      INSERT IGNORE INTO playlists (PlaylistID, name, Description, user_id)
+      VALUES (1, 'Default Playlist', 'This is the default playlist.', 1)
+    `);
+    console.log('Default playlist ensured.');
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS playlist_tracks (
-        playlist_id INT NOT NULL,
-        track_id INT NOT NULL,
-        PRIMARY KEY (playlist_id, track_id),
-        FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
-        FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+        PlaylistTrackID INT AUTO_INCREMENT PRIMARY KEY,
+        PlaylistID INT DEFAULT 1 NOT NULL,
+        TrackID INT NOT NULL,
+        FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
+        FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE,
+        UNIQUE (PlaylistID, TrackID)
       )
+    `);
+    await conn.query(`
+      ALTER TABLE votes
+      ADD PlaylistID INT DEFAULT 1,
+      ADD FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,  
+      ADD UNIQUE (PlaylistID, TrackID, UserID)
     `);
     dbInitialized = true;
     // After successfully creating the database and tables:
