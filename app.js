@@ -74,8 +74,9 @@ app.use('/', indexRouter);
 
     // Now start using tracks.js safely
     console.log("Starting server...");
-    app.listen(port, () => {
-      console.log(`Server running on http://localhost:${port}`);
+    const host = process.env.HOST || '127.0.0.1' ;
+    app.listen(port, host, () => {
+      console.log(`Server running on http://${host}:${port}`);
     });
 
   } catch (err) {

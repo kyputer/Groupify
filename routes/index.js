@@ -34,6 +34,17 @@ router.use((req, res, next) => {
     next();
 });
 
+// Middleware to log the TTL of the Spotify access token
+router.use((req, res, next) => {
+    if (req.session.spotifyAccessTokenExpiresAt) {
+        const ttl = req.session.spotifyAccessTokenExpiresAt - Date.now();
+        console.log(`Spotify Access Token TTL: ${ttl > 0 ? ttl / 1000 : 0} seconds`);
+    } else {
+        console.log('Spotify Access Token TTL: Not available');
+    }
+    next();
+});
+
 import tracks from '../db/tracks.js';
 import users from '../db/users.js'; // Ensure this is imported to interact with the user database
 
