@@ -321,6 +321,37 @@ router.post('/downvote', async function(req, res) {
     }
 });
 
+router.post('/search-suggestions', async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || query.length < 2) {
+      return res.status(400).json({ error: 'Query must be at least 2 characters long' });
+    }
+
+    const data = await spotifyApi.searchTracks(`track:${query}`, { limit: 5 });
+    const results = data.body.tracks.items.map(track => ({
+      id: track.id,
+      name: track.name,
+      artists: track.artists.map(artist => ({
+        id: artist.id,
+        name: artist.name
+      })),
+      external_urls: track.external_urls,
+      preview_url: track.preview_url,
+      album: {
+        id: track.album.id,
+        name: track.album.name,
+        images: track.album.images
+      }
+    }));
+
+    res.json(results);
+  } catch (err) {
+    console.error('Error handling search suggestions:', err);
+    res.status(500).json({ error: 'Failed to fetch search suggestions' });
+  }
+});
+
 export default router;
 
 /* SPOTIFY CRAP B	OW

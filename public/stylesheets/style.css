@@ -35,8 +35,8 @@ p {
 }
 
 .downvote:hover {
-    color: #db2828;
-    text-shadow: 2px 2px 2px #db2828;
+    color: var(--secondary-gray);
+    text-shadow: 2px 2px 2px var(--accent-green);
 }
 
 #partyyyyy .container {
@@ -299,7 +299,7 @@ body {
 
 .upvote,
 .downvote {
-    background-color: #8A2BE2;
+    background-color: var(--secondary-gray);
     /* Electric Purple */
     color: #FFFFFF;
     /* White */
