@@ -47,16 +47,20 @@ export const mockSongs: SongInterface[] = [
 
 export const mockVotes: Vote[] = [
   {
-    SongID: '1',
+    SongID: '5',
     Votes: 5
   },
   {
-    SongID: '2',
-    Votes: 3
+    SongID: '16',
+    Votes: 9
   },
   {
-    SongID: '3',
-    Votes: 1
+    SongID: '17',
+    Votes: 8
+  },
+  {
+    SongID: '18',
+    Votes: 4
   }
 ];
 
@@ -144,6 +148,36 @@ export const mockHotSongs: SongInterface[] = [
   {
     id: '5',
     name: 'Montero',
+    artists: [
+      { name: 'Lil Nas X' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/4jSS7ZcGtq5jQwQ5w7ZR5a'
+    }
+  },
+  {
+    id: '16',
+    name: 'Montero1',
+    artists: [
+      { name: 'Lil Nas X' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/4jSS7ZcGtq5jQwQ5w7ZR5a'
+    }
+  },
+  {
+    id: '17',
+    name: 'Montero2',
+    artists: [
+      { name: 'Lil Nas X' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/4jSS7ZcGtq5jQwQ5w7ZR5a'
+    }
+  },
+  {
+    id: '18',
+    name: 'Montero3',
     artists: [
       { name: 'Lil Nas X' }
     ],

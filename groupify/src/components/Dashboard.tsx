@@ -34,6 +34,11 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
     });
   };
 
+  const HotSongs = HotVotes.sort((a, b) => b.Votes - a.Votes).map((vote) => {
+    const song = HotJson.find(song => song.id === vote.SongID);
+    return Object.assign({}, vote, song);
+  });
+console.log(HotSongs)
   return (
     <div className="dashboard-container">
       <nav className="navbar">
@@ -69,9 +74,9 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
 
         <div className="hot-section">
           <h2 className="section-title">Hot Tracks</h2>
-          <div className="hot-tracks-container">
-            {HotJson.map((song, index) => (
-              <div key={song.id} className="hot-track-card">
+          <div className="playlist-container">
+            {HotSongs.filter((song) => song.id !== null).map((song, index) => (
+              <div key={song.id} className="song-card">
                 <div className="vote-controls">
                   <button 
                     className="vote-button upvote"
@@ -80,7 +85,7 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
                     <i className="fa-solid fa-chevron-up"></i>
                   </button>
                   <div className="vote-count">
-                    {HotVotes[index]?.Votes || 0}
+                    {song.Votes || 1}
                   </div>
                   <button 
                     className="vote-button downvote"
@@ -89,9 +94,11 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
                     <i className="fa-solid fa-chevron-down"></i>
                   </button>
                 </div>
-                <a href={song.external_urls.spotify} className="track-info">
-                  <div className="track-name">{song.name}</div>
-                  <div className="track-artist">{song.artists[0].name}</div>
+                <a href={song.external_urls.spotify} className="song-link">
+                  <div className="song-info">
+                    <span className="song-name">{song.name}</span>
+                    <span className="artist-name">{song.artists[0].name}</span>
+                  </div>
                 </a>
               </div>
             ))}

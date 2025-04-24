@@ -66,21 +66,6 @@ p {
   height: 16px;
 }
 
-.votes {
-  color: #ff0000;
-  float: left;
-  margin-top: 0;
-}
-
-.upvote:hover {
-  color: #21BA45;
-  text-shadow: 2px 2px 2px #21BA45;
-}
-
-.downvote:hover {
-  color: var(--secondary-gray);
-  text-shadow: 2px 2px 2px var(--accent-green);
-}
 
 #partyyyyy .container {
   display: flex;
@@ -402,30 +387,6 @@ body {
   margin-top: 1rem;
 }
 
-.upvote,
-.downvote {
-  background-color: var(--secondary-gray);
-  /* Electric Purple */
-  color: #FFFFFF;
-  /* White */
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s ease;
-}
-
-.upvote:hover {
-  background-color: #39FF14;
-  /* Neon Green */
-}
-
-.downvote:hover {
-  background-color: #FF4500;
-  /* Sunset Orange */
-}
-
 
 /* Responsive Design */
 
@@ -481,13 +442,11 @@ body {
 }
 
 .dashboard-container {
-  min-height: 100vh;
   background-color: var(--primary-bg);
 }
 
 .navbar-center {
   flex: 1;
-  max-width: 500px;
   margin: 0 2rem;
 }
 
@@ -528,6 +487,9 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1.5rem;
+  grid-auto-flow: column;
+    grid-auto-columns: minmax(250px, 1fr);
+    overflow-x: auto;
 }
 
 .song-card {
@@ -536,6 +498,9 @@ body {
   padding: 1.25rem;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .song-card:hover {
@@ -545,9 +510,10 @@ body {
 
 .song-card.active {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  .artist-name{
-    color: var(--text-primary)
-  }
+}
+
+.song-card.active .artist-name {
+  color: var(--text-primary);
 }
 
 .song-link {
@@ -596,7 +562,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-right: 2rem;
   min-width: 60px;
 }
 
@@ -614,11 +579,25 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  position: relative;
+  overflow: hidden;
 }
 
-.vote-button:hover {
-  background-color: var(--hover-bg);
-  transform: scale(1.1);
+.vote-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
+}
+
+.vote-button:hover::before {
+  opacity: 0.1;
 }
 
 .vote-button.upvote {
@@ -630,13 +609,13 @@ body {
 }
 
 .vote-button.upvote:hover {
-  background-color: rgba(123, 97, 255, 0.1);
   color: var(--upvote-color);
+  transform: translateY(-2px);
 }
 
 .vote-button.downvote:hover {
-  background-color: rgba(255, 107, 107, 0.1);
   color: var(--downvote-color);
+  transform: translateY(2px);
 }
 
 .vote-count {
@@ -646,8 +625,8 @@ body {
   margin: 0.75rem 0;
   min-width: 45px;
   text-align: center;
+  position: relative;
 }
-
 .track-info {
   flex: 1;
   text-decoration: none;
@@ -712,4 +691,8 @@ body {
 
 .search-result-item:hover {
   background-color: var(--hover-bg);
+}
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent; /* make scrollbar transparent */
 }
