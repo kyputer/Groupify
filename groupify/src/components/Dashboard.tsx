@@ -38,6 +38,7 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
     const song = HotJson.find(song => song.id === vote.SongID);
     return Object.assign({}, vote, song);
   });
+
 console.log(HotSongs)
   return (
     <div className="dashboard-container">
@@ -49,9 +50,6 @@ console.log(HotSongs)
           <SearchBar onSelect={handleSongSelect} />
         </div>
         <div className="navbar-right">
-          <button className="refresh-button">
-            <i className="fa-solid fa-rotate"></i>
-          </button>
         </div>
       </nav>
 
