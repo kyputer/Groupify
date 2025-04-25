@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SongInterface } from '../interfaces/Song';
 
+
 interface SearchBarProps {
   onSelect: (song: SongInterface) => void;
 }
@@ -75,17 +76,25 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
   }, [query]);
 
   const handleSelect = (song: SongInterface) => {
+    
     onSelect(song);
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);
     setError(null);
+
+    fetch('/api/playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ TrackID: song.id, PlaylistID: localStorage.getItem('playlistID') }),
+    });
+
   };
 
   return (
     <div className="search-container" ref={searchRef}>
       <div className="ui search">
-        <div className="ui icon input">
+        <div className="ui input">
           <input
             className="search-input"
             type="text"
@@ -94,11 +103,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setShowSuggestions(true)}
           />
-          {isLoading ? (
-            <i className="loading search icon"></i>
-          ) : (
-            <i className="search icon"></i>
-          )}
         </div>
         {error && (
           <div className="error-message" style={{ color: 'red', marginTop: '0.5rem' }}>
@@ -106,17 +110,20 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="results transition visible">
+          <div className="results transition visible  rounded-t-lg border-separate">
             {suggestions.map((song) => (
               <div
                 key={song.id}
                 className="result"
                 onClick={() => handleSelect(song)}
               >
-                <div className="content">
-                  <div className="title">{song.name}</div>
-                  <div className="description">
+                <div className="content cursor-pointer bg-[#242424] py-4 flex items-center">
+                  <img src={song.image} alt={song.name} className="song-image object-top-right pl-4" />
+                  <div className="song-info">
+                  <div className="title song-name pl-4">{song.name}</div>
+                  <div className="description artist-name pl-4">
                     {song.artists.map((artist) => artist.name).join(', ')}
+                  </div>
                   </div>
                 </div>
               </div>

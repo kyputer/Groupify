@@ -39,11 +39,10 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
     return Object.assign({}, vote, song);
   });
 
-console.log(HotSongs)
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container bg-white dark:bg-gray-900">
       <nav className="navbar">
-        <div className="navbar-left">
+        <div className="navbar-left mb-auto">
           <h1 className="logo">Groupify</h1>
         </div>
         <div className="navbar-center">
@@ -77,23 +76,30 @@ console.log(HotSongs)
               <div key={song.id} className="song-card">
                 <div className="vote-controls">
                   <button 
-                    className="vote-button upvote"
+                    className={`vote-button upvote ${song.Selected === 'up' ? 'selected' : ''}`}
                     onClick={() => handleUpvote(song.id)}
                   >
-                    <i className="fa-solid fa-chevron-up"></i>
+                    <svg className="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m5 15 7-7 7 7"/>
+</svg>
+
                   </button>
                   <div className="vote-count">
                     {song.Votes || 1}
                   </div>
                   <button 
-                    className="vote-button downvote"
+                    className={`vote-button downvote ${song.Selected === 'down' ? 'selected' : ''}`}
                     onClick={() => handleDownvote(song.id)}
                   >
-                    <i className="fa-solid fa-chevron-down"></i>
+                    <svg className="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 9-7 7-7-7"/>
+</svg>
+
                   </button>
                 </div>
                 <a href={song.external_urls.spotify} className="song-link">
                   <div className="song-info">
+                    <img src={song.image} alt={song.name} className="song-image object-top-right" />
                     <span className="song-name">{song.name}</span>
                     <span className="artist-name">{song.artists[0].name}</span>
                   </div>
