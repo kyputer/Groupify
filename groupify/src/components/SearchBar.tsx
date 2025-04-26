@@ -110,7 +110,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="results transition visible  rounded-t-lg border-separate">
+          <div className="results transition visible  rounded-t-lg border-separate max-h-0">
             {suggestions.map((song) => (
               <div
                 key={song.id}
@@ -118,7 +118,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
                 onClick={() => handleSelect(song)}
               >
                 <div className="content cursor-pointer bg-[#242424] py-4 flex items-center">
-                  <img src={song.image} alt={song.name} className="song-image object-top-right pl-4" />
+                  <img src={song.image} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
                   <div className="song-info">
                   <div className="title song-name pl-4">{song.name}</div>
                   <div className="description artist-name pl-4">
