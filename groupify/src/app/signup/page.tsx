@@ -14,10 +14,10 @@ export default function SignupPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ type: 'register', username, password }),
       });
 
       if (!response.ok) {
@@ -26,7 +26,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push('/login');
+      router.push('/api/authorise'); // Redirect to Spotify authorization
     } catch (err) {
       console.error('Signup error:', err);
       setError('Something went wrong. Please try again.');
@@ -36,7 +36,7 @@ export default function SignupPage() {
   return (
     <div className="signup-container">
       <form onSubmit={handleSignup} className="signup-form">
-        <h1>Signup</h1>
+        <h1>Sign Up</h1>
         {error && <p className="error">{error}</p>}
         <input
           type="text"
@@ -50,7 +50,7 @@ export default function SignupPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit">Signup</button>
+        <button type="submit">Sign Up</button>
       </form>
     </div>
   );

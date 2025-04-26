@@ -14,10 +14,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ type: 'login', username, password }),
       });
 
       if (!response.ok) {
@@ -26,7 +26,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/dashboard');
+      router.push('/api/authorise'); // Redirect to Spotify authorization
     } catch (err) {
       console.error('Login error:', err);
       setError('Something went wrong. Please try again.');
