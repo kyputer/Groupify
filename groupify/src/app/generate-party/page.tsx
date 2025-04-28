@@ -6,9 +6,17 @@ export default function Page() {
     const [partyCode, setPartyCode] = useState<string | null>(null);
 
     const generatePartyCode = async () => {
-        const code = await fetch('/api/generate-party-code');
-        const data = await code.json();
-        setPartyCode(data.code);
+        const response = await fetch('/api/generate-party-code',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        const code = await response.json();
+        console.log(code);
+        setPartyCode(code.code);
     };
 
     return (

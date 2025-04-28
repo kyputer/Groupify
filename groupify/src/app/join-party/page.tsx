@@ -1,18 +1,27 @@
 'use client'
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
+    const router = useRouter();
     const [partyCode, setPartyCode] = useState('');
     const [error, setError] = useState('');
 
-    const handleJoinParty = () => {
+    const handleJoinParty = async () => {
         if (partyCode.trim() === '') {
             setError('Please enter a valid party code');
             return;
         }
 
-        // TODO: Implement party code validation and joining logic
-        console.log(`Joining party with code: ${partyCode}`);
+        const response = await fetch(`/api/join-party?code=${partyCode}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            setError('');
+            router.push('/dashboard');
+        } else {
+            setError(data.error);
+        }
     };
 
 
