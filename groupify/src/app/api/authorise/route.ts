@@ -7,6 +7,10 @@ const spotifyApi = new SpotifyWebApi({
   redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
+console.log("Client ID:", process.env.SPOTIFY_CLIENT_ID);
+console.log("Client Secret:", process.env.SPOTIFY_CLIENT_SECRET);
+console.log("Redirect URI:", process.env.SPOTIFY_REDIRECT_URI);
+
 export async function GET() {
   const scopes = ['user-read-email', 'user-read-private', 'playlist-modify-public', 'playlist-modify-private'];
   const state = new Date().getTime().toString(); // Generate a unique state

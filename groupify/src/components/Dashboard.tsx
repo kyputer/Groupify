@@ -43,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
     <div className="dashboard-container bg-white dark:bg-gray-900">
       <nav className="navbar">
         <div className="navbar-left mb-auto">
-          <h1 className="logo">Groupify</h1>
+          <h1 className="logo text-4xl">Groupify</h1>
         </div>
         <div className="navbar-center">
           <SearchBar onSelect={handleSongSelect} />

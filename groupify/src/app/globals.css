@@ -65,9 +65,8 @@ body {
   margin: 0 2rem;
 }
 
-.navbar-left .logo {
+.logo {
   color: var(--text-primary);
-  font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
   background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
