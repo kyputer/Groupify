@@ -46,17 +46,20 @@ export async function initializeDatabase(): Promise<void> {
     let conn: PoolConnection | undefined;
     try {
       conn = await getDBConnection();
+      console.log('Connected to database');
+      // Ensure the correct database is selected
+      await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
+      await conn.query(`USE ${dbName}`);
 
-      await conn.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
-      await conn.query(`USE ${process.env.DB_NAME}`);
-
+      // Disable foreign key checks before dropping tables
       await conn.query('SET FOREIGN_KEY_CHECKS=0');
       await conn.query('DROP TABLE IF EXISTS playlist_tracks');
       await conn.query('DROP TABLE IF EXISTS users');
       await conn.query('DROP TABLE IF EXISTS playlists');
       await conn.query('DROP TABLE IF EXISTS votes');
-      await conn.query('DROP TABLE IF EXISTS vote');
       await conn.query('DROP TABLE IF EXISTS tracks');
+      console.log('Dropped existing tables');
+      // Recreate the tables; Re-enable foreign key checks
       await conn.query('SET FOREIGN_KEY_CHECKS=1');
 
       await conn.query(`
@@ -131,7 +134,7 @@ export async function initializeDatabase(): Promise<void> {
       `);
 
       dbInitialized = true;
-      console.log('db.ts init done!');
+      console.log('Database initialized successfully!');
     } catch (err) {
       console.error("Error initializing database:", err);
       throw err;
@@ -156,3 +159,13 @@ export async function findUserByUsername(username: string): Promise<any | null> 
     if (conn) await conn.release();
   }
 }
+
+// Automatically initialize the database when this module is loaded
+(async () => {
+  try {
+    await initializeDatabase();
+    console.log('Database initialized on module load');
+  } catch (err) {
+    console.error('Failed to initialize database on module load:', err);
+  }
+})();

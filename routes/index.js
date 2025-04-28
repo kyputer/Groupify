@@ -12,14 +12,13 @@ var spotifyApi = new SpotifyWebApi({
     redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
 
-
 spotifyApi.clientCredentialsGrant().then(
     function(data) {
         console.log('The access token has been retrieved successfully');
         spotifyApi.setAccessToken(data.body['access_token']);
-        console.log(data.body)
+        console.log(data.body);
         spotifyApi.setRefreshToken(data.body['refresh_token']); // Store the refresh token
-        console.log("refresh token: ", data.body['refresh_token'])
+        console.log("refresh token: ", data.body['refresh_token']);
     },
     function(err) {
         console.error('Failed to retrieve an access token', err);
@@ -59,7 +58,6 @@ function isLoggedIn(req, res, next) {
 /* GET login page. */
 router.get('/', function(req, res, next) {
     console.log('Rendering login page');
-    // res.send('<a href="/authorise">Authorise</a>');
     res.render('index', { title: 'Groupify' });
 });
 
@@ -76,19 +74,6 @@ router.get('/login', function(req, res, next) {
 router.get('/signup', function(req, res, next) {
     console.log('Rendering signup page');
     res.render('signup');
-});
-
-// Route to initiate Spotify authorization
-router.get('/authorise', (req, res) => {
-    const scopes = ['user-read-email', 'user-read-private', 'playlist-modify-public', 'playlist-modify-private'];
-    const state = new Date().getTime().toString(); // Generate a unique state
-    const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
-
-    // Store state in session for validation
-    req.session.spotifyAuthState = state;
-
-    console.log('Generated state:', state); // Debugging
-    res.redirect(authorizeURL);
 });
 
 // Callback route to handle Spotify's response
@@ -288,7 +273,6 @@ router.get('/dashboard', isLoggedIn, async (req, res) => {
         });
     } catch (err) {
         console.error('Error loading dashboard:', err);
-        // res.status(500).send('Failed to load dashboard');
         res.redirect('/authorise'); // Redirect to reauthenticate if an error occurs
     }
 });
