@@ -110,7 +110,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="results transition visible  rounded-t-lg border-separate max-h-0">
+          <div className="results transition visible  rounded-t-lg border-separate max-h-0  mt-[10px]">
             {suggestions.map((song) => (
               <div
                 key={song.id}

@@ -47,6 +47,105 @@ export const mockSongs: SongInterface[] = [
     },
     image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
   },
+  {
+    id: '21',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '31',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '41',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '51',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '61',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '71',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '81',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '91',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
+  {
+    id: '101',
+    name: 'Blinding Dark',
+    artists: [
+      { name: 'The Weeknd' }
+    ],
+    external_urls: {
+      spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+    },
+    image: 'https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36'
+  },
 ];
 
 export const mockVotes: Vote[] = [

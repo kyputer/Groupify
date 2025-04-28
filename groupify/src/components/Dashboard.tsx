@@ -7,9 +7,10 @@ interface DashboardProps {
   HotJson: SongInterface[];
   HotVotes: Vote[];
   UserID: string;
+  PartyCode: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, UserID }) => {
+const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, UserID, PartyCode }) => {
   const handleUpvote = (spotifyId: string) => {
     fetch('api/upvote', {
       method: 'POST',
@@ -48,7 +49,9 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
         <div className="navbar-center">
           <SearchBar onSelect={handleSongSelect} />
         </div>
-        <div className="navbar-right">
+        <div className="navbar-right flex items-center justify-center">
+          <p className="text-white text-xl justify-items-center inline-grid">Party Code: 
+            <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b></p>
         </div>
       </nav>
 

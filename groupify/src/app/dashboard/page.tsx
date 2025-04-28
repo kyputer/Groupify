@@ -7,7 +7,8 @@ export default function Page() {
     PlayedJson: mockPlayedSongs,
     HotJson: mockHotSongs,
     HotVotes: mockVotes,
-    UserID: '123'
+    UserID: '123',
+    PartyCode: '12345678'
   };
 
   return (
@@ -17,6 +18,7 @@ export default function Page() {
         HotJson={data.HotJson}
         HotVotes={data.HotVotes}
         UserID={data.UserID}
+        PartyCode={data.PartyCode}
       />
     </div>
   );

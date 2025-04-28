@@ -65,7 +65,7 @@ export default function Page() {
                     ))}
                 </div>
                 <button 
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                    className="bg-[#FF6B6B] text-white px-4 py-2 rounded-md hover:bg-[#fd4343]"
                     onClick={handleJoinParty}
                 >
                     Join Party

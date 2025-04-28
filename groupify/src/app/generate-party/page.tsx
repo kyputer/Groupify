@@ -33,10 +33,11 @@ export default function Page() {
                 {error && <p className="text-red-500 mt-2">{error}</p>}
                 <p className="mb-4 text-center">Generate a party code to invite your friends to join you.</p>
 
+                
+                <button className="bg-[#FF6B6B] text-white px-4 py-2 rounded-md hover:bg-[#fd4343]" onClick={generatePartyCode}>Generate Party</button>
                 {partyCode && (
-                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md">Party code: <b className="font-bold text-blue-500 text-xl">{partyCode}</b></p>
+                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md mt-4">Party code: <b className="font-bold text-[#FF6B6B] text-xl">{partyCode}</b></p>
                 )}
-                <button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600" onClick={generatePartyCode}>Generate Party</button>
             </div>
         </div>
     )
