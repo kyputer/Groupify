@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
 
-  try {
-
     const generateCode = (): string => {
         const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
@@ -20,17 +18,27 @@ export async function POST(request: Request) {
         return code;
       };
     
+    const code = generateCode();
+
+    // const { UserID } = await request.json();
+
+    // try {
+    //     const response = await fetch('https://api.groupify.com/api/v1/party/create', {
+    //         method: 'POST',
+    //         body: JSON.stringify({ code: code, UserID: UserID }),
+    //     });
+    // } catch (error) {
+    //     console.error('Error in generating party code route:', error);
+    //     return NextResponse.json(
+    //         { error: 'Failed to generate party code' },
+    //         { status: 500 }
+    //     );
+    // }
 
     return NextResponse.json({
-      success: true,
-      code: generateCode(),
-      message: "Party code generated successfully"
+    success: true,
+    code: code,
+    message: "Party code generated successfully"
     });
-  } catch (error) {
-    console.error('Error in generating party code route:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate party code' },
-      { status: 500 }
-    );
-  }
+    
 }

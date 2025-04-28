@@ -4,19 +4,24 @@ import { useState } from 'react';
 
 export default function Page() {
     const [partyCode, setPartyCode] = useState<string | null>(null);
-
+    const [error, setError] = useState<string | null>(null);
     const generatePartyCode = async () => {
         const response = await fetch('/api/generate-party-code',
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ UserID: 1 })
             }
         );
-        const code = await response.json();
-        console.log(code);
-        setPartyCode(code.code);
+        const result = await response.json();
+
+        if (result.success) {
+            setPartyCode(result.code);
+        } else {
+            setError(result.error);
+        }
     };
 
     return (
@@ -25,10 +30,11 @@ export default function Page() {
                 <div className="flex flex-col items-center justify-center"></div>
                 <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
                 <h1 className="text-2xl font-bold mb-4 pt-6 text-center">Generate Party</h1>
+                {error && <p className="text-red-500 mt-2">{error}</p>}
                 <p className="mb-4 text-center">Generate a party code to invite your friends to join you.</p>
 
                 {partyCode && (
-                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md">Party code: {partyCode}</p>
+                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md">Party code: <b className="font-bold text-blue-500 text-xl">{partyCode}</b></p>
                 )}
                 <button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600" onClick={generatePartyCode}>Generate Party</button>
             </div>

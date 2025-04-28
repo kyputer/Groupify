@@ -34,23 +34,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-container">
-      <form onSubmit={handleLogin} className="login-form">
-        <h1>Login</h1>
-        {error && <p className="error">{error}</p>}
+    <div className="login-container flex flex-col items-center justify-center h-screen">
+      <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
+      <form onSubmit={handleLogin} className="login-form flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold mb-4 pt-6 text-center">Login</h1>
+        {error && <p className="error text-red-500 text-center mb-4">{error}</p>}
         <input
           type="text"
           placeholder="Username"
+          className="mb-4 p-2 rounded-md w-80 border-2 border-gray-300"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
         <input
           type="password"
           placeholder="Password"
+          className="mb-4 p-2 rounded-md w-80 border-2 border-gray-300"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit">Login</button>
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Login</button>
       </form>
     </div>
   );
