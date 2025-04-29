@@ -12,10 +12,12 @@ export async function POST(request: Request) {
 
     if (type === 'login') {
       const user = await findByUsername(username);
-      if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      console.log("USER: ", user)
+      if (user && bcrypt.compareSync(password, user.password_hash)) {
+        return NextResponse.json({ success: true, message: 'Login successful' });
+      }else if (!user || bcrypt.compareSync(password, user.password_hash) === false) { 
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
       }
-      return NextResponse.json({ success: true, message: 'Login successful' });
     } else if (type === 'register') {
       const user = await register(username, password);
 
