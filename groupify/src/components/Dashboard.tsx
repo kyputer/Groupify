@@ -55,14 +55,15 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
           <SearchBar onSelect={handleSongSelect} />
         </div>
         <div className="navbar-right flex items-center justify-center">
-          <p className="text-white text-xl justify-items-center inline-grid">Party Code: 
-            <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b></p>
-            <button
-          className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
+          <p className="text-white text-xl justify-items-center inline-grid">
+            Party Code: <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b>
+          </p>
+          <button
+            className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
