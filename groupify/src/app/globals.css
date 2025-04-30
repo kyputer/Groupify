@@ -316,3 +316,17 @@ body {
     width: 100%;
   }
 }
+
+@keyframes rainbow {
+  0% { color: red; }
+  16% { color: orange; }
+  33% { color: yellow; }
+  50% { color: green; }
+  66% { color: blue; }
+  83% { color: indigo; }
+  100% { color: violet; }
+}
+
+.animate-rainbow:hover {
+  animation: rainbow 3s linear infinite;
+}

@@ -1,4 +1,4 @@
-import { getDBConnection } from '@/lib/db';
+import { getDBConnection } from './db';
 import bcrypt from 'bcryptjs';
 
 export async function findUserByUsername(username: string) {
@@ -33,5 +33,24 @@ export async function registerUser(username: string, password: string) {
     if (conn) {
       await conn.release();
     }
+  }
+}
+
+export async function findUserById(userId: number): Promise<any | null> {
+  if (!userId || isNaN(userId)) {
+    console.error('Invalid userId:', userId);
+    return null;
+  }
+
+  let conn;
+  try {
+    conn = await getDBConnection();
+    const rows = await conn.query('SELECT * FROM users WHERE id = ?', [userId]);
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    console.error('Error finding user by ID:', err);
+    return null;
+  } finally {
+    if (conn) await conn.release();
   }
 }

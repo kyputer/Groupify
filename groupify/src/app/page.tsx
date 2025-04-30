@@ -1,16 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const [playlists, setPlaylists] = useState([
-    { id: '1', name: 'Party Playlist 1' },
-    { id: '2', name: 'Chill Vibes' },
-    { id: '3', name: 'Workout Mix' },
-  ]);
+  const [playlists, setPlaylists] = useState([]);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      try {
+        const response = await fetch('/api/playlists');
+        if (!response.ok) {
+          throw new Error('Failed to fetch playlists');
+        }
+        const data = await response.json();
+        setPlaylists(data);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load playlists.');
+      }
+    };
+
+    fetchPlaylists();
+  }, []);
 
   const handleJoinPlaylist = (playlistId: string) => {
     router.push(`/join-party?playlistId=${playlistId}`);
@@ -18,21 +32,22 @@ export default function HomePage() {
 
   const handleGeneratePlaylist = async () => {
     try {
-      const response = await fetch('/api/generate-party-code', {
+      const response = await fetch('/api/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New Playlist', isPublic: true }),
       });
 
       if (!response.ok) {
         const { error } = await response.json();
-        setError(error);
+        setError(error || 'Failed to generate playlist.');
         return;
       }
 
-      const { code } = await response.json();
-      router.push(`/dashboard?partyCode=${code}`);
+      const newPlaylist = await response.json();
+      setPlaylists((prev) => [newPlaylist, ...prev]);
     } catch (err) {
-      console.error('Error generating playlist code:', err);
+      console.error('Error generating playlist:', err);
       setError('Something went wrong. Please try again.');
     }
   };
