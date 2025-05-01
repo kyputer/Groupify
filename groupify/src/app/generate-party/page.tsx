@@ -1,10 +1,13 @@
 'use client'
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setPartyCodeOwner } from '@/lib/features/partySlice';
 
 export default function Page() {
-    const [partyCode, setPartyCode] = useState<string | null>(null);
+    const [party, setParty] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const dispatch = useDispatch();
     const generatePartyCode = async () => {
         const response = await fetch('/api/generate-party-code',
             {
@@ -18,7 +21,8 @@ export default function Page() {
         const result = await response.json();
 
         if (result.success) {
-            setPartyCode(result.code);
+            setParty(result.code);
+            dispatch(setPartyCodeOwner(result.code));
         } else {
             setError(result.error);
         }
@@ -35,8 +39,8 @@ export default function Page() {
 
                 
                 <button className="bg-[#FF6B6B] text-white px-4 py-2 rounded-md hover:bg-[#fd4343]" onClick={generatePartyCode}>Generate Party</button>
-                {partyCode && (
-                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md mt-4">Party code: <b className="font-bold text-[#FF6B6B] text-xl">{partyCode}</b></p>
+                {party && (
+                    <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md mt-4">Party code: <b className="font-bold text-[#FF6B6B] text-xl">{party}</b></p>
                 )}
             </div>
         </div>

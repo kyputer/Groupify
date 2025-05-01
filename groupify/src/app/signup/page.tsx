@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { setUser } from '@/lib/features/userSlice';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +29,8 @@ export default function SignupPage() {
         return;
       }
 
+      const { user } = await response.json();
+      dispatch(setUser(user.id.toString()));
       router.push('/api/authorise'); // Redirect to Spotify authorization
     } catch (err) {
       console.error('Signup error:', err);
