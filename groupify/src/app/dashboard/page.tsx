@@ -1,13 +1,12 @@
 'use client'
 import Dashboard from '@/components/Dashboard';
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
 import { SongInterface } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 
 export default function Page() {
-  const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
   const partyCode = useSelector((state: RootState) => state.party.partyCode);
   const [data, setData] = useState<{
@@ -58,8 +57,8 @@ export default function Page() {
         PlayedJson={data.PlayedJson}
         HotJson={data.HotJson}
         HotVotes={data.HotVotes}
-        UserID={userId || ''}
-        PartyCode={partyCode || ''}
+        UserID={userId}
+        PartyCode={partyCode}
       />
     </div>
   );

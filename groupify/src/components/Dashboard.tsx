@@ -21,7 +21,7 @@ export default function DashboardPage({
   UserID,
   PartyCode,
 }: DashboardProps) {
-  const [playlists, setPlaylists] = useState([]);
+  const [playlists, setPlaylists] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function DashboardPage({
       }
 
       const newPlaylist = await response.json();
-      setPlaylists((prev) => [newPlaylist, ...prev]);
+      setPlaylists((prev: any) => [newPlaylist, ...prev]);
     } catch (err) {
       console.error('Error generating playlist:', err);
     }
