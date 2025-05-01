@@ -14,23 +14,17 @@ export async function POST(request: Request) {
       const user = await findByUsername(username);
       console.log("USER: ", user)
       if (user && bcrypt.compareSync(password, user.password_hash)) {
-        return NextResponse.json({ success: true, message: 'Login successful' });
-      }else if (!user || bcrypt.compareSync(password, user.password_hash) === false) { 
-        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        const response = NextResponse.json({ success: true, message: 'Login successful' });
+        response.cookies.set('session', user.id.toString(), { httpOnly: true, path: '/' });
+        return response;
+      } else if (user) {
+        return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
+      } else {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
-    } else if (type === 'register') {
-      const user = await register(username, password);
-
-      // Convert BigInt values to strings
-      const sanitizedUser = {
-        ...user,
-        id: user.id.toString(), // Ensure BigInt is converted to string
-      };
-
-      return NextResponse.json({ success: true, message: 'Registration successful', user: sanitizedUser });
-    } else {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
+
+    return NextResponse.json({ error: 'Invalid request type' }, { status: 400 });
   } catch (error) {
     console.error('Error in auth route:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

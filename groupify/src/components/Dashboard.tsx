@@ -1,6 +1,10 @@
+'use client';
+
 import { SongInterface } from '../interfaces/Song';
 import { Vote } from '../interfaces/Vote';
 import SearchBar from './SearchBar';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface DashboardProps {
   PlayedJson: SongInterface[];
@@ -10,7 +14,37 @@ interface DashboardProps {
   PartyCode: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, UserID, PartyCode }) => {
+export default function DashboardPage({
+  PlayedJson,
+  HotJson,
+  HotVotes,
+  UserID,
+  PartyCode,
+}: DashboardProps) {
+  const [playlists, setPlaylists] = useState([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      const response = await fetch('/api/playlists');
+      const data = await response.json();
+      setPlaylists(data);
+    };
+
+    fetchPlaylists();
+  }, []);
+
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const response = await fetch('/api/auth/check'); // Endpoint to check authentication
+      if (!response.ok) {
+        router.push('/login'); // Redirect to login if not authenticated
+      }
+    };
+
+    checkAuthentication();
+  }, [router]);
+
   const handleUpvote = (spotifyId: string) => {
     fetch('api/upvote', {
       method: 'POST',
@@ -35,8 +69,39 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
     });
   };
 
+  const handleJoinPlaylist = (playlistId: string) => {
+    window.location.href = `/dashboard?playlistId=${playlistId}`;
+  };
+
+  const handleGeneratePlaylist = async () => {
+    try {
+      const authResponse = await fetch('/api/auth/check');
+      if (!authResponse.ok) {
+        router.push('/login'); // Redirect to login if not authenticated
+        return;
+      }
+
+      const response = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New Playlist', isPublic: true }),
+      });
+
+      if (!response.ok) {
+        const { error } = await response.json();
+        console.error('Error generating playlist:', error);
+        return;
+      }
+
+      const newPlaylist = await response.json();
+      setPlaylists((prev) => [newPlaylist, ...prev]);
+    } catch (err) {
+      console.error('Error generating playlist:', err);
+    }
+  };
+
   const HotSongs = HotVotes.sort((a, b) => b.Votes - a.Votes).map((vote) => {
-    const song = HotJson.find(song => song.id === vote.SongID);
+    const song = HotJson.find((song) => song.id === vote.SongID);
     return Object.assign({}, vote, song);
   });
 
@@ -54,19 +119,46 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
         <div className="navbar-center">
           <SearchBar onSelect={handleSongSelect} />
         </div>
-        <div className="navbar-right flex items-center justify-center">
-          <p className="text-white text-xl justify-items-center inline-grid">Party Code: 
-            <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b></p>
-            <button
-          className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
+        <div className="navbar-right flex flex-col items-center justify-center">
+          <p className="text-white text-xl justify-items-center inline-grid">
+            Party Code: <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b>
+          </p>
+          <button
+            className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+          <p
+            className="mt-2 text-blue-500 underline cursor-pointer hover:animate-rainbow"
+            onClick={() => (window.location.href = '/')}
+          >
+            Leave Party
+          </p>
         </div>
       </nav>
 
       <div className="dashboard-content">
+        <div className="playlist-section">
+          <h2 className="section-title">Playlists</h2>
+          <div className="playlist-container">
+            {playlists.map((playlist) => (
+              <div
+                key={playlist.id}
+                className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
+              >
+                <span className="text-lg font-medium">{playlist.name}</span>
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                  onClick={() => handleJoinPlaylist(playlist.id)}
+                >
+                  Join
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="playlist-section">
           <h2 className="section-title">Now Playing</h2>
           <div className="playlist-container">
@@ -89,26 +181,44 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
             {HotSongs.filter((song) => song.id !== null).map((song, index) => (
               <div key={song.id} className="song-card">
                 <div className="vote-controls">
-                  <button 
+                  <button
                     className={`vote-button upvote ${song.Selected === 'up' ? 'selected' : ''}`}
                     onClick={() => handleUpvote(song.id)}
                   >
-                    <svg className="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m5 15 7-7 7 7"/>
-</svg>
-
+                    <svg
+                      className="w-6 h-6 text-gray-800 dark:text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="m5 15 7-7 7 7"
+                      />
+                    </svg>
                   </button>
-                  <div className="vote-count">
-                    {song.Votes || 1}
-                  </div>
-                  <button 
+                  <div className="vote-count">{song.Votes || 1}</div>
+                  <button
                     className={`vote-button downvote ${song.Selected === 'down' ? 'selected' : ''}`}
                     onClick={() => handleDownvote(song.id)}
                   >
-                    <svg className="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 9-7 7-7-7"/>
-</svg>
-
+                    <svg
+                      className="w-6 h-6 text-gray-800 dark:text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="m19 9-7 7-7-7"
+                      />
+                    </svg>
                   </button>
                 </div>
                 <a href={song.external_urls.spotify} className="song-link">
@@ -125,6 +235,4 @@ const Dashboard: React.FC<DashboardProps> = ({ PlayedJson, HotJson, HotVotes, Us
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
