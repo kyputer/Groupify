@@ -1,17 +1,19 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPartyCodeOwner, clearAllPartyCode } from '@/lib/features/partySlice';
 import { RootState } from '@/lib/store';
 import router from 'next/router';
 import { BooleanDropdown } from '@/components/BooleanDropdown';
 import { CopyButton } from '@/components/CopyButton';
+
 export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const dispatch = useDispatch();
     const userId = useSelector((state: RootState) => state.user.userId);
     const partyCodeOwner = useSelector((state: RootState) => state.party.partyCode);
+    const selectedPartyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
     const [isPublic, setIsPublic] = useState(true);
     const generatePartyCode = async () => {
         const response = await fetch('/api/generate-party-code',
@@ -35,7 +37,8 @@ export default function Page() {
     const isPartyCodeExpired = partyCodeOwner[partyCodeOwner.length - 1]?.timestamp < new Date(Date.now() - 1000 * 60 * 60);
     const isPartyCodeEmpty = partyCodeOwner[partyCodeOwner.length - 1]?.code === '';
     const isPartyCodeValid = (isPartyCodeExpired && !isPartyCodeEmpty) || partyCodeOwner.length === 0;
-    console.log(isPartyCodeEmpty);
+
+
     return (
         <div>
             <div className="flex flex-col items-center justify-center h-screen">
@@ -68,7 +71,8 @@ export default function Page() {
                     <div className="flex flex-col items-center justify-center">
                         <div className="flex flex-row items-center justify-center">
                         <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md mt-4">Party code: <b className="font-bold text-[#FF6B6B] text-xl">{partyCodeOwner[partyCodeOwner.length - 1]?.code}</b></p>
-                        <CopyButton value={partyCodeOwner[partyCodeOwner.length - 1]?.code} />
+                        
+                        <CopyButton value={partyCodeOwner[partyCodeOwner.length - 1]?.code || selectedPartyCode} />
                         </div>
                         <button className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 ml-4" onClick={() => dispatch(clearAllPartyCode())}>Reset</button>
                     </div>

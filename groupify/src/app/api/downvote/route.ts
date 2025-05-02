@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { mockVotes } from '@/lib/mockData';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
       throw new Error('Failed to process vote');
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ vote_count: response.body, success: true });
   } catch (error) {
     console.error('Error processing downvote:', error);
     return NextResponse.json(

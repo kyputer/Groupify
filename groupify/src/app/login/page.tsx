@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const dispatch = useDispatch();
+  
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'login', username, password }),
       });
-
+      
       if (!response.ok) {
         const { error } = await response.json();
         setError(error);
@@ -30,7 +31,7 @@ export default function LoginPage() {
       }
 
       const { user } = await response.json();
-      dispatch(setUser(user.id.toString()));
+      dispatch(setUser(user));
       router.push('/api/authorise'); // Redirect to Spotify authorization
     } catch (err) {
       console.error('Login error:', err);

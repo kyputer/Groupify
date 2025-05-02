@@ -12,6 +12,7 @@ export default function SignupPage() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -30,7 +31,7 @@ export default function SignupPage() {
       }
 
       const { user } = await response.json();
-      dispatch(setUser(user.id.toString()));
+      dispatch(setUser(user));
       router.push('/api/authorise'); // Redirect to Spotify authorization
     } catch (err) {
       console.error('Signup error:', err);

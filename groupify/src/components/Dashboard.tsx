@@ -5,7 +5,7 @@ import { Vote } from '../interfaces/Vote';
 import SearchBar from './SearchBar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
+import { LeavePartyButton } from './LeavePartyButton';
 interface DashboardProps {
   PlayedJson: SongInterface[];
   HotJson: SongInterface[];
@@ -120,25 +120,22 @@ export default function DashboardPage({
           <SearchBar onSelect={handleSongSelect} />
         </div>
         <div className="navbar-right flex flex-col items-center justify-center">
-          <p className="text-white text-xl justify-items-center inline-grid">
-            Party Code: <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b>
-          </p>
           <button
             className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
             onClick={handleLogout}
           >
             Logout
           </button>
-          <p
-            className="mt-2 text-blue-500 underline cursor-pointer hover:animate-rainbow"
-            onClick={() => (window.location.href = '/')}
-          >
-            Leave Party
-          </p>
+          <LeavePartyButton PartyCode={PartyCode} />
         </div>
       </nav>
 
       <div className="dashboard-content">
+      <div className='party-code-container'>
+        <h2 className="text-white text-xl justify-items-center">
+          Party Code: <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b>
+        </h2>
+      </div>
         <div className="playlist-section">
           <h2 className="section-title">Playlists</h2>
           <div className="playlist-container">

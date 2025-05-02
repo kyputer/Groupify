@@ -4,13 +4,31 @@ interface CopyButtonProps {
     value: string;
 }
 
+const unsecuredCopyToClipboard = (text:string) => { 
+    const textArea = document.createElement("textarea"); 
+    textArea.value=text; 
+    document.body.appendChild(textArea); 
+    textArea.focus();
+    textArea.select(); 
+    try{
+        document.execCommand('copy')
+    } catch(err) {
+        console.error('Unable to copy to clipboard',err)
+    }
+    document.body.removeChild(textArea)
+};
+
 export const CopyButton = ({ value }: CopyButtonProps) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(value);
+        if (window.isSecureContext && navigator.clipboard) {
+            navigator.clipboard.writeText(value);
+        } else {
+            unsecuredCopyToClipboard(value);
+        }
         setCopied(true);
-        setTimeout(() => setCopied(false), 5000);
+        setTimeout(() => setCopied(false), 3000);
     };
 
     return (

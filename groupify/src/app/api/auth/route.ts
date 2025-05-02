@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       const user = await findByUsername(username);
       console.log("USER: ", user)
       if (user && bcrypt.compareSync(password, user.password_hash)) {
-        const response = NextResponse.json({ success: true, message: 'Login successful' });
+        const response = NextResponse.json({ success: true, message: 'Login successful', user: user.id.toString() }); 
         response.cookies.set('session', user.id.toString(), { httpOnly: true, path: '/' });
         return response;
       } else if (user) {
@@ -22,6 +22,11 @@ export async function POST(request: Request) {
       } else {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
+    } else if (type === 'register') {
+      const user = await register(username, password);
+      const response = NextResponse.json({ success: true, message: 'Registration successful', user: user.id.toString() });
+      response.cookies.set('session', user.id.toString(), { httpOnly: true, path: '/' });
+      return response;
     }
 
     return NextResponse.json({ error: 'Invalid request type' }, { status: 400 });

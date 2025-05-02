@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { SongInterface } from '@/interfaces/Song';
-import { mockSongs } from '@/lib/mockData';
 
 export async function POST(request: Request) {
   try {
@@ -10,11 +9,24 @@ export async function POST(request: Request) {
       return NextResponse.json([]);
     }
 
-    // Filter mock songs based on the query
-    const suggestions = mockSongs.filter(song => {
+    // In production, send search request to the backend
+    const response = await fetch('http://localhost:3000/api/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch search suggestions');
+    }
+
+    const suggestionObject = await response.json();
+    const suggestions = suggestionObject.filter((song: SongInterface) => {
       const searchTerm = query.toLowerCase();
       const songName = song.name.toLowerCase();
-      const artistNames = song.artists.map(artist => artist.name.toLowerCase()).join(' ');
+      const artistNames = song.artists.map((artist) => artist.name.toLowerCase()).join(' ');
       
       return songName.includes(searchTerm) || artistNames.includes(searchTerm);
     });
@@ -27,4 +39,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
