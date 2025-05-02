@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { clearUser } from '@/lib/features/userSlice';
-import { clearPartyCode } from '@/lib/features/partySlice';
+import { clearAllPartyCode } from '@/lib/features/partySlice';
 import { useDispatch } from 'react-redux';
 export async function POST() {
   try {
@@ -8,7 +8,7 @@ export async function POST() {
     // Clear session or authentication cookies
     const response = NextResponse.json({ success: true });
     response.cookies.set('session', '', { maxAge: 0 }); // Clear session cookie
-    dispatch(clearPartyCode());
+    dispatch(clearAllPartyCode());
     dispatch(clearUser());
     return response;
   } catch (error) {

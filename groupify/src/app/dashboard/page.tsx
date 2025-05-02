@@ -8,7 +8,7 @@ import { Vote } from '@/interfaces/Vote';
 
 export default function Page() {
   const userId = useSelector((state: RootState) => state.user.userId);
-  const partyCode = useSelector((state: RootState) => state.party.partyCode);
+  const partyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
   const [data, setData] = useState<{
     PlayedJson: SongInterface[];
     HotJson: SongInterface[];

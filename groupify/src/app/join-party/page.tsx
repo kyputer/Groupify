@@ -46,10 +46,49 @@ export default function Page() {
     };
 
     const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Backspace' && !party[index] && index > 0) {
-            // Move to previous input on backspace if current is empty
-            inputRefs.current[index - 1]?.focus();
+        switch (e.key) {
+            case 'Backspace':
+                if (!party[index] && index > 0) {
+                    // Move to previous input on backspace if current is empty
+                    inputRefs.current[index - 1]?.focus();
+                }
+                break;
+            case 'ArrowLeft':
+                inputRefs.current[index - 1]?.focus();
+                e.preventDefault();
+                break;
+            case 'ArrowRight':
+                inputRefs.current[index + 1]?.focus();
+                e.preventDefault();
+                break;
+            case 'Enter':
+                e.preventDefault();
+                handleJoinParty();
+                break;
+            default:
+                if (/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:'",.<>/?\\|]$/.test(e.key)) {
+                    e.preventDefault();
+                    const newParty = [...party];
+                    newParty[index] = e.key;
+                    setParty(newParty);
+                    if (index < 7) {
+                        inputRefs.current[index + 1]?.focus();
+                    }
+                }
+                break;
         }
+        
+    };
+    
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        const newParty = [...party];
+        for (let i = 0; i < text.length; i++) {
+            newParty[i] = text.charAt(i);
+        }
+        setParty(newParty);
+        inputRefs.current[text.length - 1]?.focus();
     };
 
     return (
@@ -68,6 +107,7 @@ export default function Page() {
                             value={party[index]}
                             onChange={(e) => handleInputChange(index, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(index, e)}
+                            onPaste={handlePaste}
                             className="w-12 h-12 border-2 border-gray-300 rounded-md text-center text-xl font-bold focus:border-[#7B61FF] focus:outline-none text-white"
                         />
                     ))}
