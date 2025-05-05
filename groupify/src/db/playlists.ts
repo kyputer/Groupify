@@ -1,10 +1,17 @@
 import { getDBConnection } from '@/lib/db';
 import { Playlist } from '@/interfaces/Playlist';
 
+const playlists = {
+  createPlaylist,
+  getPlaylists,
+  getPlaylistID
+}
+
 export async function createPlaylist(
   name: string,
   createdBy: number,
-  isPublic: boolean
+  isPublic: boolean,
+  code: string
 ): Promise<Playlist> {
   const conn = await getDBConnection();
   try {
@@ -14,7 +21,7 @@ export async function createPlaylist(
       throw new Error(`User with ID ${createdBy} does not exist.`);
     }
 
-    const code = generateCode();
+
     const result = await conn.query(
       `INSERT INTO playlists (name, code, created_at, created_by, is_public)
        VALUES (?, ?, NOW(), ?, ?)`,
@@ -67,6 +74,4 @@ export async function getPlaylistID(code: string): Promise<number> {
   }
 }
 
-function generateCode(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+export default playlists;

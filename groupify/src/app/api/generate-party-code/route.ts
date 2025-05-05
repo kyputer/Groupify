@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import party from '@/db/party';
+import playlists from '@/db/playlists';
 
 export async function POST(request: Request) {
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const code = generateCode();
     try {
         const { body } = await request.json();
-        await party.createParty(body.name, body.owner, code);
+        await playlists.createPlaylist(body.name, body.owner, body.isPublic, code);
         return NextResponse.json({
             success: true,
             code: code,
