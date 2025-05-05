@@ -42,7 +42,7 @@ export async function getPlaylists(): Promise<Playlist[]> {
   try {
     const rows = await conn.query(`SELECT * FROM playlists ORDER BY created_at DESC`);
     return rows.map((row: any) => ({
-      id: row.id,
+      id: row.PlaylistID,
       name: row.name,
       code: row.code,
       createdAt: row.created_at,
@@ -57,7 +57,7 @@ export async function getPlaylists(): Promise<Playlist[]> {
 export async function getPlaylistID(code: string): Promise<number> {
   const conn = await getDBConnection();
   try {
-    const result = await conn.query('SELECT id FROM playlists WHERE code = ?', [code]);
+    const result = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
     return result[0].id;
   } catch (error) {
     console.error('Error getting playlist ID:', error);

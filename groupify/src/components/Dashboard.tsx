@@ -26,9 +26,17 @@ export default function DashboardPage({
 
   useEffect(() => {
     const fetchPlaylists = async () => {
-      const response = await fetch('/api/playlists');
-      const data = await response.json();
-      setPlaylists(data);
+      try{
+        const response = await fetch('/api/playlists');
+        if(!response.ok){
+          throw new Error('Failed to fetch playlists');
+        }
+        const data = await response.json();
+        console.log('Fetched playlists:', data); //Debugging
+        setPlaylists(data);
+      } catch (err) {
+        console.error('Error fetching playlists:', err);
+      } 
     };
 
     fetchPlaylists();
@@ -141,13 +149,13 @@ export default function DashboardPage({
           <div className="playlist-container">
             {playlists.map((playlist) => (
               <div
-                key={playlist.id}
+                key={playlist.PlaylistID}
                 className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
               >
                 <span className="text-lg font-medium">{playlist.name}</span>
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                  onClick={() => handleJoinPlaylist(playlist.id)}
+                  onClick={() => handleJoinPlaylist(playlist.PlaylistID)}
                 >
                   Join
                 </button>

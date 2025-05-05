@@ -16,6 +16,7 @@ export default function HomePage() {
           throw new Error('Failed to fetch playlists');
         }
         const data = await response.json();
+        console.log('Fetched playlists:', data); // Debugging
         setPlaylists(data);
       } catch (err) {
         console.error(err);
@@ -27,6 +28,10 @@ export default function HomePage() {
   }, []);
 
   const handleJoinPlaylist = (playlistId: string) => {
+    if(!playlistId) {
+      console.error('Playlist ID is undefined or null');
+      return;
+    }
     router.push(`/join-party?playlistId=${playlistId}`);
   };
 
@@ -60,13 +65,13 @@ export default function HomePage() {
       <div className="playlists-container flex flex-col items-center mb-6">
         {playlists.map((playlist) => (
           <div
-            key={playlist.id}
+            key={playlist.id || playlist.PlaylistID}
             className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
           >
             <span className="text-lg font-medium">{playlist.name}</span>
             <button
               className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-              onClick={() => handleJoinPlaylist(playlist.id)}
+              onClick={() => handleJoinPlaylist(playlist.id || playlist.PlaylistIDs)}
             >
               Join
             </button>
