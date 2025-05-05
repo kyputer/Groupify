@@ -1,7 +1,7 @@
-import { SongInterface } from '@/interfaces/Song';
+import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 
-export const mockSongs: SongInterface[] = [
+export const mockSongs: Song[] = [
   {
     id: '1',
     name: 'Blinding Lights',
@@ -171,7 +171,7 @@ export const mockVotes: Vote[] = [
   }
 ];
 
-export const mockPlayedSongs: SongInterface[] = [
+export const mockPlayedSongs: Song[] = [
   {
     id: '4',
     name: 'Levitating',
@@ -258,7 +258,7 @@ export const mockPlayedSongs: SongInterface[] = [
   },
 ];
 
-export const mockHotSongs: SongInterface[] = [
+export const mockHotSongs: Song[] = [
   {
     id: '5',
     name: 'Montero',

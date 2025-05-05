@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SongInterface } from '@/interfaces/Song';
+import { Song } from '@/interfaces/Song';
 
 export async function POST(request: Request) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const suggestionObject = await response.json();
-    const suggestions = suggestionObject.filter((song: SongInterface) => {
+    const suggestions = suggestionObject.filter((song: Song) => {
       const searchTerm = query.toLowerCase();
       const songName = song.name.toLowerCase();
       const artistNames = song.artists.map((artist) => artist.name.toLowerCase()).join(' ');

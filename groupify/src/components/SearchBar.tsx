@@ -1,15 +1,15 @@
 'use client' 
 import React, { useState, useEffect, useRef } from 'react';
-import { SongInterface } from '../interfaces/Song';
+import { Song } from '../interfaces/Song';
 
 
 interface SearchBarProps {
-  onSelect: (song: SongInterface) => void;
+  onSelect: (song: Song) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<SongInterface[]>([]);
+  const [suggestions, setSuggestions] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
     };
   }, [query]);
 
-  const handleSelect = (song: SongInterface) => {
+  const handleSelect = (song: Song) => {
     
     onSelect(song);
     setQuery('');

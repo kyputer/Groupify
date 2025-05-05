@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
-import { setUser } from '@/lib/features/userSlice';
+import { setUser, clearUser } from '@/lib/features/userSlice';
+import { RootState } from '@/lib/store';
+import { useSelector } from 'react-redux';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,6 +14,16 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch();
   
+  const [UserID, isAuthenticated ] = useSelector((state: RootState) => [state.user.userId, state.user.isAuthenticated]);
+
+  useEffect(() => {
+    if (UserID && !isAuthenticated) {
+      dispatch(clearUser());
+    } else if (isAuthenticated && UserID) {
+      router.push('/dashboard');
+    }
+  }, [UserID, isAuthenticated, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

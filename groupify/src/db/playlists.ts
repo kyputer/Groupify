@@ -1,13 +1,5 @@
 import { getDBConnection } from '@/lib/db';
-
-interface Playlist {
-  id: number;
-  name: string;
-  code: string;
-  createdAt: string;
-  createdBy: string;
-  isPublic: boolean;
-}
+import { Playlist } from '@/interfaces/Playlist';
 
 export async function createPlaylist(
   name: string,
@@ -57,6 +49,19 @@ export async function getPlaylists(): Promise<Playlist[]> {
       createdBy: row.created_by,
       isPublic: row.is_public === 1,
     }));
+  } finally {
+    conn.release();
+  }
+}
+
+export async function getPlaylistID(code: string): Promise<number> {
+  const conn = await getDBConnection();
+  try {
+    const result = await conn.query('SELECT id FROM playlists WHERE code = ?', [code]);
+    return result[0].id;
+  } catch (error) {
+    console.error('Error getting playlist ID:', error);
+    throw error;
   } finally {
     conn.release();
   }

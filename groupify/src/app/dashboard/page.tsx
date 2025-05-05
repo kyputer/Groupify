@@ -3,15 +3,15 @@ import Dashboard from '@/components/Dashboard';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
-import { SongInterface } from '@/interfaces/Song';
+import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 
 export default function Page() {
   const userId = useSelector((state: RootState) => state.user.userId);
   const partyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
   const [data, setData] = useState<{
-    PlayedJson: SongInterface[];
-    HotJson: SongInterface[];
+    PlayedJson: Song[];
+    HotJson: Song[];
     HotVotes: Vote[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -1,14 +1,14 @@
 'use client';
 
-import { SongInterface } from '../interfaces/Song';
+import { Song } from '../interfaces/Song';
 import { Vote } from '../interfaces/Vote';
 import SearchBar from './SearchBar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
 interface DashboardProps {
-  PlayedJson: SongInterface[];
-  HotJson: SongInterface[];
+  PlayedJson: Song[];
+  HotJson: Song[];
   HotVotes: Vote[];
   UserID: string;
   PartyCode: string;
@@ -61,7 +61,7 @@ export default function DashboardPage({
     });
   };
 
-  const handleSongSelect = (song: SongInterface) => {
+  const handleSongSelect = (song: Song) => {
     fetch('/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

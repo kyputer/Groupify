@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { SongInterface } from '@/interfaces/Song';
+import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
-import { mockPlayedSongs, mockHotSongs, mockVotes } from '@/lib/mockData';
 
 export async function GET() {
   try {
+    // TODO: Replace with actual data fetching logic
     const data = {
-      PlayedJson: mockPlayedSongs,
-      HotJson: mockHotSongs,
-      HotVotes: mockVotes,
+      PlayedJson: [] as Song[],
+      HotJson: [] as Song[],
+      HotVotes: [] as Vote[],
       UserID: '123'
     };
 

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import tracks from '@/db/tracks';
+import { getPlaylistID } from '@/db/playlists';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 export async function POST(request: Request) {
   try {
-    const { UserID, SpotifyID } = await request.json();
+    const { UserID, SpotifyID, Code } = await request.json();
 
     if (!UserID || !SpotifyID) {
       return NextResponse.json(
@@ -21,24 +23,12 @@ export async function POST(request: Request) {
       });
     }
 
-    // In production, send vote to the backend
-    const response = await fetch('http://localhost:3000/api/vote', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: UserID,
-        spotify_id: SpotifyID,
-        vote_type: 'downvote'
-      })
-    });
 
-    if (!response.ok) {
-      throw new Error('Failed to process vote');
-    }
+  const playlistID = await getPlaylistID(Code);
+  // In production, send vote to the backend
+  await tracks.downvote(SpotifyID, UserID, playlistID);
 
-    return NextResponse.json({ vote_count: response.body, success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error processing downvote:', error);
     return NextResponse.json(

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addTrackToPlaylist } from '@/db/tracks'; // Adjust the import path as needed
+import tracks from '@/db/tracks';
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    await addTrackToPlaylist(PlaylistID, TrackID);
+    await tracks.addTrackToPlaylist(TrackID, PlaylistID);
 
     return NextResponse.json({
       success: true,
