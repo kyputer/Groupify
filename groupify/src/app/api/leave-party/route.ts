@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import party from '@/db/party';
 
 
 export async function POST(request: Request) {
@@ -10,7 +9,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    await party.leaveParty(body.partyID, body.code, body.userID);
+    // TODO: Implement leave party
+    // await playlists.leaveParty(body.partyID, body.code, body.userID);
 
     return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
