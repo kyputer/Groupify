@@ -6,6 +6,9 @@ import SearchBar from './SearchBar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
+import { useDispatch } from 'react-redux';
+import { clearUser } from '@/lib/features/userSlice';
+
 interface DashboardProps {
   PlayedJson: Song[];
   HotJson: Song[];
@@ -23,7 +26,7 @@ export default function DashboardPage({
 }: DashboardProps) {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const router = useRouter();
-
+  const dispatch = useDispatch();
   useEffect(() => {
     const fetchPlaylists = async () => {
       try{
@@ -115,6 +118,7 @@ export default function DashboardPage({
 
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
+    dispatch(clearUser());
     window.location.href = '/login'; // Redirect to login page
   };
 
