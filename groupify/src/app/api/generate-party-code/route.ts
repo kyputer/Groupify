@@ -16,6 +16,7 @@ export async function POST(request: Request) {
           const randomIndex = Math.floor(Math.random() * allChars.length);
           code += allChars[randomIndex];
         }
+        console.log("Generated code:", code); // Debugging
         return code;
       };
     
