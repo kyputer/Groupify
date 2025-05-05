@@ -16,13 +16,13 @@ export default function LoginPage() {
   
   const [UserID, isAuthenticated ] = useSelector((state: RootState) => [state.user.userId, state.user.isAuthenticated]);
 
-  useEffect(() => {
-    if (UserID && !isAuthenticated) {
-      dispatch(clearUser());
-    } else if (isAuthenticated && UserID) {
-      router.push('/dashboard');
-    }
-  }, [UserID, isAuthenticated, router]);
+  // useEffect(() => {
+  //   if (UserID && !isAuthenticated) {
+  //     dispatch(clearUser());
+  //   } else if (isAuthenticated && UserID) {
+  //     router.push('/dashboard');
+  //   }
+  // }, [UserID, isAuthenticated, router]);
 
 
   const handleLogin = async (e: React.FormEvent) => {

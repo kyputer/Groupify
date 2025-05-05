@@ -15,13 +15,13 @@ export default function SignupPage() {
 
   const [UserID, isAuthenticated ] = useSelector((state: RootState) => [state.user.userId, state.user.isAuthenticated]);
 
-  useEffect(() => {
-    if (UserID && !isAuthenticated) {
-      dispatch(clearUser());
-    } else if (isAuthenticated && UserID) {
-      router.push('/dashboard');
-    }
-  }, [UserID, isAuthenticated, router]);
+  // useEffect(() => {
+  //   if (UserID && !isAuthenticated) {
+  //     dispatch(clearUser());
+  //   } else if (isAuthenticated && UserID) {
+  //     router.push('/dashboard');
+  //   }
+  // }, [UserID, isAuthenticated, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
