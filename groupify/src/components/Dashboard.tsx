@@ -149,7 +149,7 @@ export default function DashboardPage({
           <div className="playlist-container">
             {playlists.map((playlist) => (
               <div
-                key={playlist.PlaylistID}
+                key={playlist.id}
                 className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
               >
                 <span className="text-lg font-medium">{playlist.name}</span>

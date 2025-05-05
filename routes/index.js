@@ -119,11 +119,23 @@ router.get('/callback', async (req, res) => {
 });
 
 /* User authentication route */
-router.post('/login', passport.authenticate('local', {
-    successRedirect: '/dashboard',
-    failureRedirect: '/login',
-    failureFlash: true
-}));
+router.post('/login', async (req, res, next) => {
+  passport.authenticate('local', (err, user, info) => {
+    if (err) return next(err);
+    if (!user) {
+      if (info.message === 'Incorrect password') {
+        return res.status(401).json({ error: 'Incorrect password' });
+      }
+      if (info.message === 'User not found') {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    }
+    req.logIn(user, (loginErr) => {
+      if (loginErr) return next(loginErr);
+      return res.redirect('/dashboard');
+    });
+  })(req, res, next);
+});
 
 router.post('/search', async(req, res) => {
     try {
