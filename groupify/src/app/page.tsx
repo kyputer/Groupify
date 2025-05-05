@@ -65,13 +65,13 @@ export default function HomePage() {
       <div className="playlists-container flex flex-col items-center mb-6">
         {playlists.map((playlist) => (
           <div
-            key={playlist.id || playlist.PlaylistID}
+            key={playlist.id }
             className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
           >
             <span className="text-lg font-medium">{playlist.name}</span>
             <button
               className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-              onClick={() => handleJoinPlaylist(playlist.id || playlist.PlaylistIDs)}
+              onClick={() => handleJoinPlaylist(playlist.id )}
             >
               Join
             </button>

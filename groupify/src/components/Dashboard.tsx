@@ -159,7 +159,7 @@ export default function DashboardPage({
                 <span className="text-lg font-medium">{playlist.name}</span>
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                  onClick={() => handleJoinPlaylist(playlist.PlaylistID)}
+                  onClick={() => handleJoinPlaylist(playlist.id)}
                 >
                   Join
                 </button>
