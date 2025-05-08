@@ -52,6 +52,7 @@ export async function GET(request: Request) {
     console.log('Session updated:', session);
 
     const origin = new URL(request.url).origin; // Get the origin from the request URL
+    // TODO: Change the reroute to the main app page instead of dashboard. Code insertion DB error.
     return NextResponse.redirect(`${origin}/dashboard`); // Redirect to the absolute URL of the dashboard
   } catch (err) {
     console.error('Error during authorization code grant:', err);

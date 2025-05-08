@@ -107,10 +107,12 @@ export async function initializeDatabase(): Promise<void> {
         CREATE TABLE IF NOT EXISTS playlists (
           PlaylistID INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
-          Description TEXT DEFAULT NULL,
-          user_id INT NOT NULL,
+          code VARCHAR(8) NOT NULL UNIQUE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          created_by INT NOT NULL,
+          is_public BOOLEAN DEFAULT TRUE,
+          description TEXT DEFAULT NULL,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
 
