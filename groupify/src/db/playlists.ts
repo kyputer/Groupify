@@ -4,12 +4,14 @@ import { Playlist } from '@/interfaces/Playlist';
 const playlists = {
   createPlaylist,
   getPlaylists,
-  getPlaylistID
+  getPlaylistID,
+  joinPlaylist,
+  leavePlaylist
 }
 
 export async function createPlaylist(
   name: string,
-  createdBy: number,
+  createdBy: string,
   isPublic: boolean,
   code: string
 ): Promise<Playlist> {
@@ -72,6 +74,66 @@ export async function getPlaylistID(code: string): Promise<number> {
   } finally {
     conn.release();
   }
+}
+
+export async function joinPlaylist(code: string, userID: string): Promise<void>{
+  const conn = await getDBConnection();
+  try {
+    // Check if the user exists
+    const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [userID]);
+    if (userCheck.length === 0) {
+      throw new Error(`User with ID ${userID} does not exist.`);
+    }
+
+    // Check if the playlist exists
+    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
+    if (codeCheck.length === 0) {
+      throw new Error(`Playlist with code ${code} does not exist.`);
+    }
+
+    console.log(codeCheck);
+    await conn.query(
+      `INSERT INTO playlist_users (PlaylistID, UserID)
+      VALUES (?, ?)`, [codeCheck[0].PlaylistID, userID])
+    return;
+  } catch (error) {
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function leavePlaylist(code: string, userID: string): Promise<void>{
+  const conn = await getDBConnection();
+
+  try {
+    // Check if the user exists
+    const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [userID]);
+    if (userCheck.length === 0) {
+      throw new Error(`User with ID ${userID} does not exist.`);
+    }
+
+    // Check if the playlist exists
+    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
+    if (codeCheck.length === 0) {
+      throw new Error(`Playlist with code ${code} does not exist.`);
+    }
+
+    // Check if user is in relation table
+    const joinCheck = await conn.query('SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?', [userID, codeCheck[0].PlaylistID]);
+    if (joinCheck.length === 0) {
+      throw new Error(`User ${userID} is not in Playlist with code ${code}`);
+    }
+
+    await conn.query(`UPDATE playlist_users SET Joined = FALSE WHERE PlaylistUserID = ?`, [joinCheck[0].PlaylistUserID])
+    return;
+  } catch (error) {
+    throw error;
+  } finally {
+    conn.release();
+  }
+
+
 }
 
 export default playlists;

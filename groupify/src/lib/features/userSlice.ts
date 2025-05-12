@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { resetAll } from '../actions';
 
 interface UserState {
   userId: string;
@@ -22,6 +23,9 @@ const userSlice = createSlice({
       state.userId = '';
       state.isAuthenticated = false;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(resetAll, () => initialState);
   },
 });
 

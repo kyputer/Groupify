@@ -1,15 +1,15 @@
 'use client' 
 import React, { useState, useEffect, useRef } from 'react';
-import { Song } from '../interfaces/Song';
+import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
 
 
 interface SearchBarProps {
-  onSelect: (song: Song) => void;
+  onSelect: (song: SpotifyTrack) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<Song[]>([]);
+  const [suggestions, setSuggestions] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
     };
   }, [query]);
 
-  const handleSelect = (song: Song) => {
+  const handleSelect = (song: SpotifyTrack) => {
     
     onSelect(song);
     setQuery('');
@@ -118,11 +118,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
                 onClick={() => handleSelect(song)}
               >
                 <div className="content cursor-pointer bg-[#242424] py-4 flex items-center">
-                  <img src={song.image} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
+                  <img src={song.album.images[0].url} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
                   <div className="song-info">
                   <div className="title song-name pl-4">{song.name}</div>
                   <div className="description artist-name pl-4">
-                    {song.artists.map((artist) => artist.name).join(', ')}
+                    {song.artists.map((artist: any) => artist.name).join(' & ')}
                   </div>
                   </div>
                 </div>

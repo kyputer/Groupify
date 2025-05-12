@@ -1,28 +1,5 @@
 import SpotifyWebApi from 'spotify-web-api-node';
-
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: Array<{
-    id: string;
-    name: string;
-  }>;
-  album: {
-    id: string;
-    name: string;
-    images: Array<{
-      url: string;
-      height: number | undefined;
-      width: number | undefined;
-    }>;
-  };
-  external_urls: {
-    spotify: string;
-  };
-  preview_url: string | null;
-  duration_ms: number;
-  popularity: number;
-}
+import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
 
 let accessToken: string | null = null;
 let tokenExpirationTime: number = 0;
@@ -90,7 +67,7 @@ export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
 
   try {
     const response = await spotifyApi.searchTracks(query, { 
-      limit: 5,
+      limit: 10,
       market: 'US'
     });
     return response.body.tracks?.items.map(mapTrackToSpotifyTrack) || [];

@@ -1,36 +1,42 @@
 'use client'
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDispatch } from 'react-redux';
+import { RootState } from '@/lib/store';
+import { useDispatch, useSelector } from 'react-redux';
 import { setPartyCode } from '@/lib/features/partySlice';
 
 export default function Page() {
     const router = useRouter();
+    const userId = useSelector((state: RootState) => state.user.userId);
     const [party, setParty] = useState(['', '', '', '', '', '', '', '']);
     const [error, setError] = useState('');
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const dispatch = useDispatch();
+    
     const handleJoinParty = async () => {
         const code = party.join('');
         if (code.length !== 8) {
             setError('Please enter a valid party code');
             return;
         }
+        console.log(code.length, code);
+        const response = await fetch('/api/join-party',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ UserID: userId, PartyCode: code })
+            }
+        );
+        const result = await response.json();
 
-        const response = await fetch(`/api/join-party?code=${code}`);
-        const data = await response.json();
-
-        if (response.ok) {
+        if (result.success) {
             dispatch(setPartyCode(code));
             setError('');
             router.push('/dashboard');
         } else {
-            if (data.error) {
-                setError(data.error);
-            } else {
-                setError('Party not found');
-            }
-            
+            setError(result.error);
         }
     };
 

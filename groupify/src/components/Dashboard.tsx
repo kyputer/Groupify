@@ -6,8 +6,9 @@ import SearchBar from './SearchBar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
+import { LogOutButton } from './LogOutButton';
 import { useDispatch } from 'react-redux';
-import { clearUser } from '@/lib/features/userSlice';
+
 
 interface DashboardProps {
   PlayedJson: Song[];
@@ -116,11 +117,7 @@ export default function DashboardPage({
     return Object.assign({}, vote, song);
   });
 
-  const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    dispatch(clearUser());
-    window.location.href = '/login'; // Redirect to login page
-  };
+  
 
   return (
     <div className="dashboard-container bg-white dark:bg-gray-900">
@@ -132,13 +129,8 @@ export default function DashboardPage({
           <SearchBar onSelect={handleSongSelect} />
         </div>
         <div className="navbar-right flex flex-col items-center justify-center">
-          <button
-            className="ml-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-          <LeavePartyButton PartyCode={PartyCode} />
+          <LogOutButton/>
+          <LeavePartyButton PartyCode={PartyCode} UserID={UserID} />
         </div>
       </nav>
 

@@ -20,10 +20,11 @@ export async function POST(request: Request) {
         return code;
       };
     
-    const code = generateCode();
+    
     try {
-        const { body } = await request.json();
-        await playlists.createPlaylist(body.name, body.owner, body.isPublic, code);
+        const { UserID, isPublic } = await request.json();
+        const code = generateCode();
+        await playlists.createPlaylist(UserID + code, UserID, isPublic, code);
         return NextResponse.json({
             success: true,
             code: code,

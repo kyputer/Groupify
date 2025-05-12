@@ -62,6 +62,7 @@ export async function initializeDatabase(): Promise<void> {
       await conn.query('DROP TABLE IF EXISTS playlists');
       await conn.query('DROP TABLE IF EXISTS votes');
       await conn.query('DROP TABLE IF EXISTS tracks');
+      await conn.query('DROP TABLE IF EXISTS playlist_users');
       console.log('Dropped existing tables');
       // Recreate the tables; Re-enable foreign key checks
       await conn.query('SET FOREIGN_KEY_CHECKS=1');
@@ -117,7 +118,7 @@ export async function initializeDatabase(): Promise<void> {
       `);
 
       await conn.query(`
-        INSERT IGNORE INTO playlists (PlaylistID, name, Description, user_id)
+        INSERT IGNORE INTO playlists (PlaylistID, name, Description, created_by)
         VALUES (1, 'Default Playlist', 'This is the default playlist.', 1)
       `);
 
@@ -138,6 +139,19 @@ export async function initializeDatabase(): Promise<void> {
         ADD FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         ADD UNIQUE (PlaylistID, TrackID, UserID)
       `);
+
+      await conn.query(`
+        CREATE TABLE IF NOT EXISTS playlist_users (
+          PlaylistUserID INT AUTO_INCREMENT PRIMARY KEY,
+          PlaylistID INT DEFAULT 1 NOT NULL,
+          UserID INT NOT NULL,
+          Joined BOOLEAN DEFAULT TRUE,
+          FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
+          FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE (PlaylistID, UserID)
+        )
+        
+        `)
 
       dbInitialized = true;
       console.log('Database initialized successfully!');

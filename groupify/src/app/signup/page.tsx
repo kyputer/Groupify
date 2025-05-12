@@ -13,7 +13,7 @@ export default function SignupPage() {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const [UserID, isAuthenticated ] = useSelector((state: RootState) => [state.user.userId, state.user.isAuthenticated]);
+  // const [UserID, isAuthenticated ] = useSelector((state: RootState) => [state.user.userId, state.user.isAuthenticated]);
 
   // useEffect(() => {
   //   if (UserID && !isAuthenticated) {
