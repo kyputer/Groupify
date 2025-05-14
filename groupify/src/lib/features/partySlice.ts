@@ -6,13 +6,15 @@ interface PartyState {
   isOwner: boolean; 
   isJoined: boolean; 
   timestamp: number | null;
+  playlistID: string;
 }
 
 const initialState: PartyState = {
   selectedPartyCode: '',
   isOwner: false,
   isJoined: false,
-  timestamp: null
+  timestamp: null,
+  playlistID: ''
 };
 
 export const partySlice = createSlice({
@@ -29,6 +31,9 @@ export const partySlice = createSlice({
       state.selectedPartyCode = action.payload;
       state.isJoined = true;
       state.timestamp = Date.now();
+    },
+    setPlaylistID: (state, action: PayloadAction<string>) => {
+      state.playlistID = action.payload;
     },
     selectPartyCode: (state, action) => {
       state.selectedPartyCode = action.payload.code;
@@ -50,5 +55,5 @@ export const partySlice = createSlice({
   },
 });
 
-export const { setPartyCodeOwner, setPartyCode, selectPartyCode, clearPartyCode, clearAllPartyCode } = partySlice.actions;
+export const { setPartyCodeOwner, setPartyCode, setPlaylistID, selectPartyCode, clearPartyCode, clearAllPartyCode } = partySlice.actions;
 export default partySlice.reducer; 

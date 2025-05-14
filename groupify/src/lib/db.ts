@@ -17,12 +17,12 @@ export const pool = mariadb.createPool({
   port: dbPort,
   connectionLimit: 20,
   multipleStatements: true,
-  acquireTimeout: 20000,
-  waitForConnections: true,
+  acquireTimeout: 20000
 });
 
 let dbInitialized = false;
 let dbInitPromise: Promise<void> | null = null;
+let dbInitError: Error | null = null;
 
 export async function getDBConnection(): Promise<PoolConnection> {
   let connection: PoolConnection;
@@ -34,16 +34,60 @@ export async function getDBConnection(): Promise<PoolConnection> {
     return connection;
   } catch (err) {
     console.error('Error retrieving a connection from the pool:', err);
+    // Don't reinitialize on connection errors
     throw err;
   }
 }
 
-export async function initializeDatabase(): Promise<void> {
-  console.log('Initializing database');
-  if (dbInitialized) return;
+async function checkDatabaseExists(conn: PoolConnection): Promise<boolean> {
+  try {
+    const result = await conn.query(`
+      SELECT SCHEMA_NAME 
+      FROM INFORMATION_SCHEMA.SCHEMATA 
+      WHERE SCHEMA_NAME = ?
+    `, [dbName]);
+    return result.length > 0;
+  } catch (err) {
+    console.error('Error checking database existence:', err);
+    return false;
+  }
+}
+
+async function checkTablesExist(conn: PoolConnection): Promise<boolean> {
+  try {
+    const result = await conn.query(`
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = ? 
+      AND table_name IN ('users', 'tracks', 'votes', 'playlists', 'playlist_tracks', 'playlist_users')
+    `, [dbName]);
+    return result[0].count === 6;
+  } catch (err) {
+    console.error('Error checking tables existence:', err);
+    return false;
+  }
+}
+
+export async function initializeDatabase(force: boolean = false): Promise<void> {
+  console.log('Checking database initialization');
+  
+  // If we've already initialized successfully, don't reinitialize unless forced
+  if (!force && dbInitialized) {
+    console.log('Database already initialized, skipping initialization');
+    return;
+  }
+
+  // If we have a pending initialization, wait for it
   if (dbInitPromise) {
+    console.log('Waiting for pending initialization');
     await dbInitPromise;
     return;
+  }
+
+  // If we had a previous initialization error and we're not forcing, don't retry
+  if (!force && dbInitError) {
+    console.log('Previous initialization failed, skipping initialization');
+    throw dbInitError;
   }
 
   dbInitPromise = (async () => {
@@ -51,7 +95,22 @@ export async function initializeDatabase(): Promise<void> {
     try {
       conn = await getDBConnection();
       console.log('Connected to database');
-      // Ensure the correct database is selected
+
+      // Check if database and tables exist
+      const dbExists = await checkDatabaseExists(conn);
+      if (dbExists) {
+        await conn.query(`USE ${dbName}`);
+        const tablesExist = await checkTablesExist(conn);
+        if (tablesExist && !force) {
+          console.log('Database and tables already exist, skipping initialization');
+          dbInitialized = true;
+          dbInitError = null;
+          return;
+        }
+      }
+
+      // If we get here, either the database doesn't exist or we're forcing initialization
+      console.log('Initializing database...');
       await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
       await conn.query(`USE ${dbName}`);
 
@@ -84,6 +143,7 @@ export async function initializeDatabase(): Promise<void> {
           title VARCHAR(255) NOT NULL,
           artist VARCHAR(255) NOT NULL,
           url VARCHAR(255) NOT NULL,
+          image VARCHAR(255) NOT NULL,
           user_id INT,
           blacklist INT DEFAULT NULL,
           votes INT DEFAULT 1,
@@ -98,7 +158,7 @@ export async function initializeDatabase(): Promise<void> {
           TrackID INT NOT NULL,
           UserID INT NOT NULL,
           Play BOOLEAN NOT NULL DEFAULT 0,
-          VoteType ENUM('upvote', 'downvote') NOT NULL,
+          VoteType ENUM('upvote', 'downvote', 'neutral') NOT NULL,
           FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
           FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE
         )
@@ -154,16 +214,24 @@ export async function initializeDatabase(): Promise<void> {
         `)
 
       dbInitialized = true;
+      dbInitError = null;
       console.log('Database initialized successfully!');
     } catch (err) {
       console.error("Error initializing database:", err);
+      dbInitError = err as Error;
       throw err;
     } finally {
       if (conn) await conn.release();
+      dbInitPromise = null;
     }
   })();
 
+  try {
   await dbInitPromise;
+  } catch (err) {
+    // Don't rethrow the error, just log it
+    console.error('Database initialization failed:', err);
+  }
 }
 
 export async function findUserByUsername(username: string): Promise<any | null> {
@@ -179,13 +247,3 @@ export async function findUserByUsername(username: string): Promise<any | null> 
     if (conn) await conn.release();
   }
 }
-
-// Automatically initialize the database when this module is loaded
-(async () => {
-  try {
-    await initializeDatabase();
-    console.log('Database initialized on module load');
-  } catch (err) {
-    console.error('Failed to initialize database on module load:', err);
-  }
-})();

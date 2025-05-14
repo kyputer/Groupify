@@ -15,20 +15,26 @@ export async function POST(request: Request) {
       );
     }
 
-    if (isDevelopment) {
-      // In development, just return success
-      return NextResponse.json({ 
-        success: true,
-        message: 'Mock downvote successful'
-      });
+    const playlistID = await getPlaylistID(Code);
+    if (!playlistID) {
+      return NextResponse.json(
+        { error: 'Invalid playlist code' },
+        { status: 404 }
+      );
     }
 
+    // Create a track object with the minimum required properties
+    const track = {
+      id: SpotifyID,
+      name: '',  // These will be filled in by the tracks.downvote function
+      artists: [{ name: '' }],
+      href: ''
+    };
 
-  const playlistID = await getPlaylistID(Code);
-  // In production, send vote to the backend
-  await tracks.downvote(SpotifyID, UserID, playlistID);
+    const result = await tracks.downvote(track, parseInt(UserID), playlistID);
+    console.log('Downvote result:', result);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error processing downvote:', error);
     return NextResponse.json(

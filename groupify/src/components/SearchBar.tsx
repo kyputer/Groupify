@@ -1,13 +1,16 @@
 'use client' 
 import React, { useState, useEffect, useRef } from 'react';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
-
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store';
 
 interface SearchBarProps {
-  onSelect: (song: SpotifyTrack) => void;
+  UserID: string;
+  playlistID: string;
+  onTrackAdded?: () => Promise<void>;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
+const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -15,6 +18,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
   const [error, setError] = useState<string | null>(null);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,24 +79,42 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
     };
   }, [query]);
 
-  const handleSelect = (song: SpotifyTrack) => {
-    
-    onSelect(song);
+  const handleSelect = async (song: SpotifyTrack) => {
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);
     setError(null);
 
-    fetch('/api/playlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ TrackID: song.id, PlaylistID: localStorage.getItem('playlistID') }),
-    });
+    console.log("Selected song: ", song);
+    try {
+      const response = await fetch('/api/playlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Track: song, PlaylistID: playlistID, UserID: UserID }),
+      });
 
+      if (!response.ok) {
+        throw new Error('Failed to add track to playlist');
+      }
+
+      // Call the onTrackAdded callback if provided
+      if (onTrackAdded) {
+        await onTrackAdded();
+      }
+    } catch (error) {
+      console.error('Error adding track:', error);
+      setError('Failed to add track to playlist');
+    }
+  };
+
+  const formatDuration = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="search-container" ref={searchRef}>
+    <div className="search-container relative" ref={searchRef}>
       <div className="ui search">
         <div className="ui input">
           <input
@@ -110,20 +132,30 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelect }) => {
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="results transition visible  rounded-t-lg border-separate max-h-0  mt-[10px]">
+          <div className="results transition visible rounded-t-lg border-separate max-h-[400px] overflow-y-auto mt-[10px] absolute w-full z-50 bg-[#242424] shadow-lg">
             {suggestions.map((song) => (
               <div
                 key={song.id}
                 className="result"
                 onClick={() => handleSelect(song)}
               >
-                <div className="content cursor-pointer bg-[#242424] py-4 flex items-center">
-                  <img src={song.album.images[0].url} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
-                  <div className="song-info">
-                  <div className="title song-name pl-4">{song.name}</div>
-                  <div className="description artist-name pl-4">
-                    {song.artists.map((artist: any) => artist.name).join(' & ')}
+                <div className="content cursor-pointer bg-[#242424] py-4 flex items-center justify-between hover:bg-[#2a2a2a]">
+                  <div className="flex items-center">
+                    <img src={song.album.images[0].url} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
+                    <div className="song-info">
+                      <div className="title song-name pl-4 flex items-center gap-2">
+                        {song.name}
+                        {song.explicit && (
+                          <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">E</span>
+                        )}
+                      </div>
+                      <div className="description artist-name pl-4">
+                        {song.artists.map((artist: any) => artist.name).join(' & ')}
+                      </div>
+                    </div>
                   </div>
+                  <div className="duration pr-4 text-gray-400">
+                    {formatDuration(song.duration_ms)}
                   </div>
                 </div>
               </div>

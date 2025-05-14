@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import playlists from '@/db/playlists';
-
+import tracks from '@/db/tracks';
 export async function POST(request: Request) {
 
     const generateCode = (): string => {
@@ -24,10 +24,12 @@ export async function POST(request: Request) {
     try {
         const { UserID, isPublic } = await request.json();
         const code = generateCode();
-        await playlists.createPlaylist(UserID + code, UserID, isPublic, code);
+        const playlistID = await playlists.createPlaylist(UserID + code, UserID, isPublic, code);
+        await playlists.joinPlaylist(code, UserID);
         return NextResponse.json({
             success: true,
             code: code,
+            playlistID: playlistID,
             message: "Party code generated successfully"
         });
     } catch (error) {

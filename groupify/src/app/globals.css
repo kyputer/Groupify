@@ -15,6 +15,7 @@
   --downvote-color: #FF6B6B;
   --upvote-selected-color: #5230ff;
   --downvote-selected-color: #fd4343;
+  --accent-primary: #1e00b3;
 }
 
 @theme inline {
@@ -315,18 +316,4 @@ body {
   .search-container {
     width: 100%;
   }
-}
-
-@keyframes rainbow {
-  0% { color: red; }
-  16% { color: orange; }
-  33% { color: yellow; }
-  50% { color: green; }
-  66% { color: blue; }
-  83% { color: indigo; }
-  100% { color: violet; }
-}
-
-.animate-rainbow:hover {
-  animation: rainbow 3s linear infinite;
 }

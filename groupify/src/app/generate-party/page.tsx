@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPartyCodeOwner, clearPartyCode } from '@/lib/features/partySlice';
+import { setPartyCodeOwner, clearPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 import { RootState } from '@/lib/store';
 import { BooleanDropdown } from '@/components/BooleanDropdown';
 import { CopyButton } from '@/components/CopyButton';
@@ -28,6 +28,7 @@ export default function Page() {
 
         if (result.success) {
             dispatch(setPartyCodeOwner(result.code));
+            dispatch(setPlaylistID(result.playlistID.id));
         } else {
             setError(result.error);
         }

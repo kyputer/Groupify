@@ -3,8 +3,8 @@ import tracks from '@/db/tracks';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    await tracks.addTrackToPlaylist(body.TrackID, body.PlaylistID);
+    const {Track, PlaylistID, UserID} = await request.json();
+    await tracks.addTrackToPlaylist(Track, PlaylistID, UserID);
 
     return NextResponse.json({
         success: true,

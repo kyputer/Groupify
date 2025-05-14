@@ -5,6 +5,7 @@ import { findByUsername, register } from '@/db/users';
 export async function POST(request: Request) {
   try {
     const { type, username, password } = await request.json();
+    console.log('Auth request:', { type, username });
 
     if (!type || !username || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -12,10 +13,25 @@ export async function POST(request: Request) {
 
     if (type === 'login') {
       const user = await findByUsername(username);
-      console.log("USER: ", user)
+      console.log("Found user:", user);
+      
       if (user && bcrypt.compareSync(password, user.password_hash)) {
-        const response = NextResponse.json({ success: true, message: 'Login successful', user: user.id.toString() }); 
-        response.cookies.set('session', user.id.toString(), { httpOnly: true, path: '/' });
+        const response = NextResponse.json({ 
+          success: true, 
+          message: 'Login successful', 
+          user: user.id.toString() 
+        });
+        
+        // Set the session cookie with proper options
+        response.cookies.set('session', user.id.toString(), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7 // 1 week
+        });
+        
+        console.log('Session cookie set for user:', user.id);
         return response;
       } else if (user) {
         return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
@@ -24,8 +40,22 @@ export async function POST(request: Request) {
       }
     } else if (type === 'register') {
       const user = await register(username, password);
-      const response = NextResponse.json({ success: true, message: 'Registration successful', user: user.id.toString() });
-      response.cookies.set('session', user.id.toString(), { httpOnly: true, path: '/' });
+      const response = NextResponse.json({ 
+        success: true, 
+        message: 'Registration successful', 
+        user: user.id.toString() 
+      });
+      
+      // Set the session cookie with proper options
+      response.cookies.set('session', user.id.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      });
+      
+      console.log('Session cookie set for new user:', user.id);
       return response;
     }
 

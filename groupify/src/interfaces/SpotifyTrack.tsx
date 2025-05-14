@@ -20,4 +20,8 @@ export interface SpotifyTrack {
     preview_url: string | null;
     duration_ms: number;
     popularity: number;
-  }
+    Votes?: number;
+    Selected?: string | null;
+    image?: string;
+    explicit: boolean;
+}

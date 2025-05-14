@@ -4,4 +4,9 @@ export interface Song {
     artists: { name: string }[];
     external_urls: { spotify: string };
     image: string;
+    album?: {
+      images: { url: string }[];
+    };
+    Votes: number;
+    Selected: string | null;
   }

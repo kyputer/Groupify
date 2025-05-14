@@ -63,11 +63,15 @@ export async function getPlaylists(): Promise<Playlist[]> {
   }
 }
 
-export async function getPlaylistID(code: string): Promise<number> {
+export async function getPlaylistID(code: string): Promise<number | null> {
   const conn = await getDBConnection();
   try {
     const result = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
-    return result[0].id;
+    if (result.length === 0) {
+      console.log(`No playlist found with code: ${code}`);
+      return null;
+    }
+    return result[0].PlaylistID;
   } catch (error) {
     console.error('Error getting playlist ID:', error);
     throw error;
@@ -76,7 +80,7 @@ export async function getPlaylistID(code: string): Promise<number> {
   }
 }
 
-export async function joinPlaylist(code: string, userID: string): Promise<void>{
+export async function joinPlaylist(code: string, userID: string): Promise<number>{
   const conn = await getDBConnection();
   try {
     // Check if the user exists
@@ -91,11 +95,10 @@ export async function joinPlaylist(code: string, userID: string): Promise<void>{
       throw new Error(`Playlist with code ${code} does not exist.`);
     }
 
-    console.log(codeCheck);
     await conn.query(
       `INSERT INTO playlist_users (PlaylistID, UserID)
       VALUES (?, ?)`, [codeCheck[0].PlaylistID, userID])
-    return;
+    return codeCheck[0].PlaylistID;
   } catch (error) {
     throw error;
   } finally {

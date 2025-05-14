@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { RootState } from '@/lib/store';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPartyCode } from '@/lib/features/partySlice';
+import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 
 export default function Page() {
     const router = useRouter();
@@ -33,6 +33,7 @@ export default function Page() {
 
         if (result.success) {
             dispatch(setPartyCode(code));
+            dispatch(setPlaylistID(result.playlistID));
             setError('');
             router.push('/dashboard');
         } else {

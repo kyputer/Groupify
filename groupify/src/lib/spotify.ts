@@ -56,7 +56,8 @@ function mapTrackToSpotifyTrack(track: any): SpotifyTrack {
     },
     preview_url: track.preview_url,
     duration_ms: track.duration_ms,
-    popularity: track.popularity
+    popularity: track.popularity,
+    explicit: track.explicit
   };
 }
 
