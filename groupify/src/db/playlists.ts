@@ -3,7 +3,8 @@ import { Playlist } from '@/interfaces/Playlist';
 
 const playlists = {
   createPlaylist,
-  getPlaylists,
+  getAllPublicPlaylists,
+  getUserPlaylists,
   getPlaylistID,
   joinPlaylist,
   leavePlaylist,
@@ -55,10 +56,37 @@ export async function createPlaylist(
   }
 }
 
-export async function getPlaylists(): Promise<Playlist[]> {
+export async function getAllPublicPlaylists(): Promise<Playlist[]> {
   const conn = await getDBConnection();
   try {
-    const rows = await conn.query(`SELECT * FROM playlists ORDER BY created_at DESC`);
+    const rows = await conn.query(`
+      SELECT * FROM playlists 
+      WHERE is_public = 1 
+      ORDER BY created_at DESC`);
+    
+    return rows.map((row: any) => ({
+      id: row.PlaylistID,
+      name: row.name,
+      code: row.code,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      isPublic: row.is_public === 1,
+    }));
+  } finally {
+    conn.release();
+  }
+}
+
+export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
+  const conn = await getDBConnection();
+  try {
+    const rows = await conn.query(`
+      SELECT playlists.* FROM playlists 
+      LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
+      WHERE playlist_users.UserID = ?
+      AND playlist_users.Joined = 1
+      AND playlists.is_public = 0
+      ORDER BY playlists.created_at DESC`, [userID]);
     return rows.map((row: any) => ({
       id: row.PlaylistID,
       name: row.name,

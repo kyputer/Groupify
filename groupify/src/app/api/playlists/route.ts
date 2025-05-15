@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server';
-import { getPlaylists, createPlaylist } from '@/db/playlists';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAllPublicPlaylists, createPlaylist, getUserPlaylists } from '@/db/playlists';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const playlists = await getPlaylists();
+    const playlists = await getAllPublicPlaylists();
+    const session = request.cookies.get('session')?.value;
+    if (session) {
+      const userPlaylists = await getUserPlaylists(session);
+      playlists.push(...userPlaylists);
+    }
+    playlists.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json(playlists);
   } catch (error) {
     console.error('Error fetching playlists:', error);
@@ -11,7 +17,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { name, isPublic, code, description } = await request.json();
 
@@ -26,7 +32,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating playlist:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create playlist' },
+      { error: `Failed to create playlist: ${error}` },
       { status: 500 }
     );
   }
