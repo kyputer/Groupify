@@ -103,6 +103,12 @@ export async function joinPlaylist(code: string, userID: string): Promise<number
       throw new Error(`Playlist with code ${code} does not exist.`);
     }
 
+    // Check if the user is already in the playlist
+    const joinCheck = await conn.query('SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?', [userID, codeCheck[0].PlaylistID]);
+    if (joinCheck.length > 0) {
+      return codeCheck[0].PlaylistID;
+    }
+
     await conn.query(
       `INSERT INTO playlist_users (PlaylistID, UserID)
       VALUES (?, ?)`, [codeCheck[0].PlaylistID, userID])

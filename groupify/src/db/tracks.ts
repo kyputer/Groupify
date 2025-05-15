@@ -1,6 +1,7 @@
 import { getDBConnection } from '@/lib/db';
 import { Track } from '@/interfaces/Track';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
+import { BLACKLIST_THRESHOLD, QUEUE_SONG_THRESHOLD } from '@/lib/constant';
 
 
 const tracks = {
@@ -86,6 +87,9 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
 
     // Get the updated vote count
     const updatedTrack = await conn.query('SELECT votes FROM tracks WHERE id=?;', [trackID]);
+    if (updatedTrack[0].votes >= QUEUE_SONG_THRESHOLD) {
+      await pushTrackToQueue(track.id, playlistID);
+    }
     return { trackID, votes: updatedTrack[0].votes, voteType };
   } catch (err) {
     console.error('Database error:', err);
@@ -111,26 +115,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
 
     // First check if track exists
     const trackRows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
-    let trackID: number;
-    
-    if (trackRows.length === 0) {
-      // If track doesn't exist, create it first
-      const result = await conn.query(
-        'INSERT INTO tracks (SpotifyID, title, artist, url, user_id, votes) VALUES (?,?,?,?,?,?);',
-        [track.id, track.name, track.artists[0].name, track.href, userID, 0]
-      );
-      trackID = result.insertId;
-      console.log('New track created for downvote:', trackID);
-    } else {
-      trackID = trackRows[0].id;
-      console.log('Existing track found:', trackID);
-    }
-
-    // Ensure track is in playlist
-    await conn.query(
-      'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
-      [playlistID, trackID]
-    );
+    const trackID = trackRows[0].id;
 
     // Check existing vote
     const voteRows = await conn.query(
@@ -181,6 +166,9 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
     const updatedTrack = await conn.query('SELECT votes FROM tracks WHERE id=?;', [trackID]);
     console.log('Updated vote count:', updatedTrack[0].votes);
 
+    if (updatedTrack[0].votes <= BLACKLIST_THRESHOLD) {
+      await pushBlacklist(track, playlistID);
+    }
     return { trackID, votes: updatedTrack[0].votes, voteType };
   } catch (err) {
     console.error('Database error in downvote:', err);
