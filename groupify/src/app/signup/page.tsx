@@ -53,8 +53,9 @@ export default function SignupPage() {
   return (
     <div className="signup-container flex flex-col items-center justify-center h-screen">
       <form onSubmit={handleSignup} className="signup-form flex flex-col items-center justify-center">
-        <p className="text-gray-500 text-center mb-4">Already have an account?<Link></Link></p>
+       
         <h1 className="text-3xl font-bold mb-4 pt-6 text-center">Sign Up</h1>
+        <p className="text-gray-500 text-center mb-4 cursor-pointer hover:text-[#7B61FF]" onClick={() => router.push('/login')} >Already have an account? </p>
         {error && <p className="error text-red-500 text-center mb-4">{error}</p>}
         <input
           type="text"
@@ -70,7 +71,7 @@ export default function SignupPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Sign Up</button>
+        <button type="submit" className="bg-[#fd4343] text-white px-4 py-2 rounded-md hover:bg-[#FF6B6B]">Sign Up</button>
       </form>
     </div>
   );

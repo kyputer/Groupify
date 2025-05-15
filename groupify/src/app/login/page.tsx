@@ -56,6 +56,7 @@ export default function LoginPage() {
       <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
       <form onSubmit={handleLogin} className="login-form flex flex-col items-center justify-center">
         <h1 className="text-3xl font-bold mb-4 pt-6 text-center">Login</h1>
+        <p className="text-gray-500 text-center mb-4 cursor-pointer hover:text-[#7B61FF]" onClick={() => router.push('/signup')} >Don't have an account? </p>
         {error && <p className="error text-red-500 text-center mb-4">{error}</p>}
         <input
           type="text"
@@ -71,7 +72,7 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Login</button>
+        <button type="submit" className="bg-[#fd4343] text-white px-4 py-2 rounded-md hover:bg-[#FF6B6B]">Login</button>
       </form>
     </div>
   );
