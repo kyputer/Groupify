@@ -27,10 +27,10 @@ export const LeavePartyButton = ({ PartyCode, UserID }: LeavePartyButtonProps) =
     
     return (
         <button
-            className="mt-2 text-blue-500 underline cursor-pointer hover:animate-rainbow"
+            className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
             onClick={handleLeaveParty}
-          >
+        >
             Leave Party
-          </button>
+        </button>
     )
 }

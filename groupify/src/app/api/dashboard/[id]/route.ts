@@ -53,6 +53,10 @@ export async function GET(
     const hotSongs = await tracks.getHot(session, playlistID.toString());
     console.log("Hot songs returned:", hotSongs);
 
+    console.log("Fetching played songs for playlist code:", id);
+    const playedSongs = await tracks.getPlayed(session, playlistID.toString());
+    console.log("Played songs returned:", playedSongs);
+
     // Transform hot songs into the expected format
     const hotVotes = hotSongs.map(song => ({
       SongID: song.id,
@@ -61,7 +65,7 @@ export async function GET(
     }));
 
     const data = {
-      PlayedJson: [] as Song[],
+      PlayedJson: playedSongs,
       HotJson: hotSongs,
       HotVotes: hotVotes,
       UserID: session

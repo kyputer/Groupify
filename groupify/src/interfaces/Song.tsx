@@ -9,4 +9,6 @@ export interface Song {
     };
     Votes: number;
     Selected: string | null;
+    duration_ms: number;
+    explicit: boolean;
   }

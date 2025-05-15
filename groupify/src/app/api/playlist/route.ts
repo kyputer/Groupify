@@ -5,7 +5,6 @@ export async function POST(request: Request) {
   try {
     const {Track, PlaylistID, UserID} = await request.json();
     await tracks.addTrackToPlaylist(Track, PlaylistID, UserID);
-
     return NextResponse.json({
         success: true,
         message: 'Track added to playlist',

@@ -1,8 +1,7 @@
 'use client' 
 import React, { useState, useEffect, useRef } from 'react';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store';
+import { formatDuration } from '@/lib/utils';
 
 interface SearchBarProps {
   UserID: string;
@@ -107,12 +106,6 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
     }
   };
 
-  const formatDuration = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="search-container relative" ref={searchRef}>
       <div className="ui search">
@@ -140,8 +133,12 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
                 onClick={() => handleSelect(song)}
               >
                 <div className="content cursor-pointer bg-[#242424] py-4 flex items-center justify-between hover:bg-[#2a2a2a]">
-                  <div className="flex items-center">
-                    <img src={song.album.images[0].url} alt={song.name} className="song-image object-top-right pl-4 max-w-24" />
+                  <div className="flex items-center w-full pl-4">
+                    <img 
+                      src={song.album.images[0]?.url || '/default-album.png'} 
+                      alt={song.name}
+                      className="w-24 h-24 rounded-lg object-cover mr-4"
+                    />
                     <div className="song-info">
                       <div className="title song-name pl-4 flex items-center gap-2">
                         {song.name}

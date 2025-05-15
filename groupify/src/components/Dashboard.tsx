@@ -7,8 +7,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
 import { LogOutButton } from './LogOutButton';
-import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
-import VoteButtons from './VoteButtons';
 import SongCard from './SongCard';
 
 
@@ -32,6 +30,7 @@ export default function DashboardPage({
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [hotTracks, setHotTracks] = useState<Song[]>(HotJson);
   const [hotVotes, setHotVotes] = useState<Vote[]>(HotVotes);
+  const [playedTracks, setPlayedTracks] = useState<Song[]>(PlayedJson);
   const router = useRouter();
 
   const refreshHotTracks = async () => {
@@ -42,11 +41,12 @@ export default function DashboardPage({
         throw new Error('Failed to fetch dashboard data');
       }
       const data = await response.json();
-      console.log('Refreshed hot tracks data:', data);
+      console.log('Refreshed dashboard data:', data);
       setHotTracks(data.HotJson);
       setHotVotes(data.HotVotes);
+      setPlayedTracks(data.PlayedJson);
     } catch (error) {
-      console.error('Error refreshing hot tracks:', error);
+      console.error('Error refreshing dashboard data:', error);
     }
   };
 
@@ -180,15 +180,15 @@ export default function DashboardPage({
         </div>
         <div className="navbar-right flex flex-col items-center justify-center">
           <LogOutButton/>
-          <LeavePartyButton PartyCode={PartyCode} UserID={UserID} />
         </div>
       </nav>
 
       <div className="dashboard-content">
-        <div className='party-code-container'>
-          <h2 className="text-white text-xl justify-items-center">
-            Party Code: <b className="font-bold text-[#FF6B6B] text-2xl">{PartyCode}</b>
+        <div className='party-code-container flex items-center gap-4 mb-8'>
+          <h2 className="text-white text-xl">
+            Party Code: <span className="text-[#FF6B6B] font-bold">{PartyCode}</span>
           </h2>
+          <LeavePartyButton PartyCode={PartyCode} UserID={UserID} />
         </div>
         <div className="playlist-section">
           <h2 className="section-title">Playlists</h2>
@@ -215,12 +215,12 @@ export default function DashboardPage({
             )}
           </div>
         </div>
-
-        <div className="playlist-section">
-          <h2 className="section-title">Now Playing</h2>
-          <div className="playlist-container">
-            {PlayedJson && PlayedJson.length > 0 ? (
-              PlayedJson.map((song) => (
+        <h2 className="section-title">Now Playing</h2>
+        <div className="playlist-section overflow-auto">
+          
+          <div className="playlist-container overflow-y-scroll">
+            {playedTracks && playedTracks.length > 0 ? (
+              playedTracks.map((song) => (
                 <SongCard
                   key={song.id}
                   song={song}
@@ -234,15 +234,13 @@ export default function DashboardPage({
             )}
           </div>
         </div>
-
-        <div className="playlist-section">
-          <h2 className="section-title">Hot Tracks</h2>
-          <div className="playlist-container">
+        <h2 className="section-title">Hot Tracks</h2>
+        <div className="playlist-section overflow-auto">
+          
+          <div className="playlist-container overflow-y-scroll">
             {hotTracks.length > 0 ? (
               hotTracks.map((song) => {
-                
                 const vote = hotVotes.find(v => v.SongID === song.id);
-                console.log(song);
                 const voteCount = vote?.Votes ?? song.Votes ?? 0;
                 
                 return (

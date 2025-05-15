@@ -147,6 +147,12 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
           user_id INT,
           blacklist INT DEFAULT NULL,
           votes INT DEFAULT 1,
+          duration_ms INT NOT NULL,
+          explicit BOOLEAN DEFAULT FALSE,
+          queued BOOLEAN DEFAULT FALSE,
+          queue_at TIMESTAMP DEFAULT NULL,
+          played BOOLEAN DEFAULT FALSE,
+          played_at TIMESTAMP DEFAULT NULL,
           added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         )
@@ -157,7 +163,6 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
           id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
           TrackID INT NOT NULL,
           UserID INT NOT NULL,
-          Play BOOLEAN NOT NULL DEFAULT 0,
           VoteType ENUM('upvote', 'downvote', 'neutral') NOT NULL,
           FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
           FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE

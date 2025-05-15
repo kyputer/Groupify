@@ -24,4 +24,10 @@ export interface SpotifyTrack {
     Selected?: string | null;
     image?: string;
     explicit: boolean;
+    queued: boolean;
+    queue_at: Date | null;
+    played: boolean;
+    played_at: Date | null;
+    blacklist: boolean;
+    
 }

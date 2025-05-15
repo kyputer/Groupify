@@ -57,7 +57,12 @@ function mapTrackToSpotifyTrack(track: any): SpotifyTrack {
     preview_url: track.preview_url,
     duration_ms: track.duration_ms,
     popularity: track.popularity,
-    explicit: track.explicit
+    explicit: track.explicit,
+    queued: false,
+    queue_at: null,
+    played: false,
+    played_at: null,
+    blacklist: false
   };
 }
 
@@ -105,5 +110,11 @@ export async function getMultipleTrackDetails(trackIds: string[]): Promise<Spoti
     return [];
   }
 }
+
+export  function formatDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 export default spotifyApi; 

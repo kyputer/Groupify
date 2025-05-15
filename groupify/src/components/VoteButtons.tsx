@@ -12,7 +12,7 @@ export default function VoteButtons({ song, vote, voteCount, onVote }: VoteButto
   const selectedVote = vote?.Selected;
   
   return (
-    <div className="flex flex-col items-center space-y-2 ml-4">
+    <div className="flex flex-col items-center space-y-2 ml-4 mt-2 mr-4">
       <button
         onClick={() => onVote(song, 'upvote')}
         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
