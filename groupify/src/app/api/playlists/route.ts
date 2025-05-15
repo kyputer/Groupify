@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, isPublic, code } = await request.json();
+    const { name, isPublic, code, description } = await request.json();
 
     // Simulate user authentication (replace with actual session/auth logic)
     const userId = request.cookies.get('session')?.value; // Ensure user is logged in
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const playlist = await createPlaylist(name, userId, isPublic, code);
+    const playlist = await createPlaylist(name, userId, isPublic, code, description);
     return NextResponse.json(playlist); // BigInt values are already converted to strings
   } catch (error) {
     console.error('Error creating playlist:', error);

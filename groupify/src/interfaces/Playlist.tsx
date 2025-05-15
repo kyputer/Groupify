@@ -5,4 +5,5 @@ export interface Playlist {
     createdAt: string;
     createdBy: string;
     isPublic: boolean;
+    description: string;
   }

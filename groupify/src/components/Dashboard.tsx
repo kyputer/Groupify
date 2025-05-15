@@ -162,7 +162,7 @@ export default function DashboardPage({
   };
 
   const handleJoinPlaylist = (playlistId: string) => {
-    window.location.href = `/dashboard?playlistId=${playlistId}`;
+    router.push(`/dashboard?playlistId=${playlistId}`);
   };
 
   return (
@@ -197,15 +197,25 @@ export default function DashboardPage({
               playlists.map((playlist) => (
                 <div
                   key={playlist.id}
-                  className="playlist-item mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
+                  className="playlist-item mr-2 mb-4 p-4 rounded-md w-80 border-2 border-gray-300 flex justify-between items-center"
                 >
                   <span className="text-lg font-medium">{playlist.name}</span>
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                    onClick={() => handleJoinPlaylist(playlist.id)}
-                  >
-                    Join
-                  </button>
+                  
+                  {playlist.code === PartyCode ? (
+                    <button
+                      className="bg-[#7B61FF] text-white px-4 py-2 rounded-md cursor-default"
+                      disabled
+                    >
+                      Joined
+                    </button>
+                  ):( 
+                    <button
+                      className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                      onClick={() => handleJoinPlaylist(playlist.id)}
+                    >
+                      Join
+                    </button>
+                  )}
                 </div>
               ))
             ) : (

@@ -132,7 +132,7 @@ export default function HomePage() {
           >
             <span className="text-lg font-medium">{playlist.name}</span>
             <button
-              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+              className="bg-[#FF6B6B] text-white px-4 py-2 rounded-md hover:bg-[#fd4343] transition-colors"
               onClick={() => handleJoinPlaylist(playlist.id)}
             >
               Join

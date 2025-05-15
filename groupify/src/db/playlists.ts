@@ -13,7 +13,8 @@ export async function createPlaylist(
   name: string,
   createdBy: string,
   isPublic: boolean,
-  code: string
+  code: string,
+  description: string
 ): Promise<Playlist> {
   const conn = await getDBConnection();
   try {
@@ -23,11 +24,17 @@ export async function createPlaylist(
       throw new Error(`User with ID ${createdBy} does not exist.`);
     }
 
-
+    // Check if the code is already in use
+    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
+    if (codeCheck.length > 0) {
+      throw new Error(`Code ${code} is already in use.`);
+    }
+    
+    console.log(`Creating playlist with code: ${code} and name: ${name} and description: ${description}`);
     const result = await conn.query(
-      `INSERT INTO playlists (name, code, created_at, created_by, is_public)
-       VALUES (?, ?, NOW(), ?, ?)`,
-      [name, code, createdBy, isPublic]
+      `INSERT INTO playlists (name, code, created_at, created_by, is_public, description)
+       VALUES (?, ?, NOW(), ?, ?, ?)`,
+      [name, code, createdBy, isPublic, description]
     );
 
     return {
@@ -37,6 +44,7 @@ export async function createPlaylist(
       createdAt: new Date().toISOString(),
       createdBy: createdBy.toString(), // Convert BigInt to string
       isPublic,
+      description
     };
   } catch (error) {
     console.error('Error creating playlist in database:', error);
