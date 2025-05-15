@@ -28,9 +28,9 @@ export const generateCode = (): string => {
   const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
   const numberChars = "0123456789";
-  const symbolChars = "!@#$%^&*()_+[]{}|;:,.<>?";
+  // const symbolChars = "!@#$%^&*()_+[]{}|;:,.<>?";
 
-  let allChars = uppercaseChars + lowercaseChars + numberChars + symbolChars;
+  let allChars = uppercaseChars + lowercaseChars + numberChars;
   
   let code = "";
   for (let i = 0; i < 8; i++) {

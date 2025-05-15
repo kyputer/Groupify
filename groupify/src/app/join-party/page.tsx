@@ -35,7 +35,7 @@ export default function Page() {
             dispatch(setPartyCode(code));
             dispatch(setPlaylistID(result.playlistID));
             setError('');
-            router.push('/dashboard');
+            router.push(`/dashboard?code=${code}`);
         } else {
             setError(result.error);
         }
@@ -64,7 +64,7 @@ export default function Page() {
             if (pastedText.length < 8) {
                 inputRefs.current[pastedText.length]?.focus();
             } 
-            
+
             return;
         }
         switch (e.key) {

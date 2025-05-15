@@ -77,7 +77,14 @@ export default function DashboardPage({
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
-        const response = await fetch('/api/playlists');
+        const response = await fetch('/api/playlists', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch playlists');
         }
