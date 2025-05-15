@@ -6,7 +6,7 @@ import { setPartyCodeOwner, clearPartyCode, setPlaylistID } from '@/lib/features
 import { RootState } from '@/lib/store';
 import { BooleanDropdown } from '@/components/BooleanDropdown';
 import { CopyButton } from '@/components/CopyButton';
-import { sanitizeInput, validateInput } from '@/lib/utils';
+import { validateInput } from '@/lib/utils';
 
 
 export default function Page() {
@@ -20,17 +20,11 @@ export default function Page() {
     const [isPublic, setIsPublic] = useState(true);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const sanitized = sanitizeInput(e.target.value);
-        if (sanitized.length <= 32) {
-            setName(sanitized);
-        }
+        setName(e.target.value);
     };
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const sanitized = sanitizeInput(e.target.value);
-        if (sanitized.length <= 256) {
-            setDescription(sanitized);
-        }
+       setDescription(e.target.value);
     };
 
     const generatePartyCode = async () => {

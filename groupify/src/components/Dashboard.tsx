@@ -161,8 +161,20 @@ export default function DashboardPage({
     }
   };
 
-  const handleJoinPlaylist = (playlistId: string) => {
-    router.push(`/dashboard?playlistId=${playlistId}`);
+  const handleJoinPlaylist = async (playlistId: string) => {
+    const success = await fetch(`/api/join-party/${playlistId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ UserID, PartyCode }),
+      credentials: 'include' // Include cookies in the request
+    });
+    if (success.ok) {
+      const data = await success.json();
+      console.log('Joined playlist:', data);
+      refreshHotTracks();
+    }
   };
 
   return (

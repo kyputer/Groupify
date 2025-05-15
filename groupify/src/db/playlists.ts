@@ -6,7 +6,8 @@ const playlists = {
   getPlaylists,
   getPlaylistID,
   joinPlaylist,
-  leavePlaylist
+  leavePlaylist,
+  joinPlaylistWithID
 }
 
 export async function createPlaylist(
@@ -149,8 +150,38 @@ export async function leavePlaylist(code: string, userID: string): Promise<void>
   } finally {
     conn.release();
   }
+}
 
+export async function joinPlaylistWithID(playlistID: string, userID: string): Promise<string>{
+  const conn = await getDBConnection();
+  try {
+    // Check if the user exists
+    const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [userID]);
+    if (userCheck.length === 0) {
+      throw new Error(`User with ID ${userID} does not exist.`);
+    }
 
+    // Check if the playlist exists
+    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (codeCheck.length === 0) {
+      throw new Error(`Playlist with code ${playlistID} does not exist.`);
+    }
+
+    // Check if the user is already in the playlist
+    const joinCheck = await conn.query('SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?', [userID, playlistID]);
+    if (joinCheck.length > 0) {
+      return codeCheck[0].code;
+    }
+
+    await conn.query(
+      `INSERT INTO playlist_users (PlaylistID, UserID)
+      VALUES (?, ?)`, [playlistID, userID])
+    return codeCheck[0].code;
+  } catch (error) {
+    throw error;
+  } finally {
+    conn.release();
+  }
 }
 
 export default playlists;

@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import playlists from '@/db/playlists';
 import { generateCode } from '@/lib/utils';
+import { sanitizeInput } from '@/lib/utils';
 
 export async function POST(request: Request) {
     try {
         const { UserID, isPublic, Name, Description } = await request.json();
+        const sanitizedName = sanitizeInput(Name);
+        const sanitizedDescription = sanitizeInput(Description);
         const code = generateCode();
-        const playlistID = await playlists.createPlaylist(Name, UserID, isPublic, code, Description);
+        const playlistID = await playlists.createPlaylist(sanitizedName, UserID, isPublic, code, sanitizedDescription);
         await playlists.joinPlaylist(code, UserID);
         return NextResponse.json({
             success: true,

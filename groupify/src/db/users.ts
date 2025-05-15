@@ -42,9 +42,10 @@ export async function findById(id: string) {
 export async function register(username: string, password: string) {
   const conn = await getDBConnection();
   try {
+    const hash = bcrypt.hashSync(password, 8);
     const result = await conn.query(
       'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-      [username, password]
+      [username, hash]
     );
     return { id: result.insertId, username };
   } catch (err) {

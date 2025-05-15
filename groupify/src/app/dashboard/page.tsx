@@ -28,11 +28,7 @@ export default function Page() {
         console.log('Party code from URL:', searchParams?.get('code'));
         console.log('Selected code:', code);
 
-        if (!code) {
-          throw new Error('No party code provided');
-        }
-
-        const encodedCode = encodeURIComponent(code);
+        const encodedCode = encodeURIComponent(code || '');
         console.log('Fetching dashboard data for code:', code);
         const response = await fetch(`/api/dashboard/${encodedCode}`, {
           method: 'GET',
