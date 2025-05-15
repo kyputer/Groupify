@@ -167,7 +167,6 @@ export default function DashboardPage({
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ UserID, PartyCode }),
       credentials: 'include' // Include cookies in the request
     });
     if (success.ok) {
@@ -196,12 +195,14 @@ export default function DashboardPage({
       </nav>
 
       <div className="dashboard-content">
+        {PartyCode && (
         <div className='party-code-container flex items-center gap-4 mb-8'>
           <h2 className="text-white text-xl">
             Party Code: <span className="text-[#FF6B6B] font-bold">{PartyCode}</span>
           </h2>
           <LeavePartyButton PartyCode={PartyCode} UserID={UserID} />
         </div>
+        )}
         <div className="playlist-section">
           <h2 className="section-title">Playlists</h2>
           <div className="playlist-container">
