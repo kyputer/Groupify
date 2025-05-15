@@ -8,8 +8,6 @@ import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
 import { LogOutButton } from './LogOutButton';
 import SongCard from './SongCard';
-import { useDispatch } from 'react-redux';
-import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 
 
 interface DashboardProps {
@@ -19,6 +17,7 @@ interface DashboardProps {
   UserID: string;
   PartyCode: string;
   PlaylistID: string;
+  onPartyJoin?: (partyCode: string, playlistId: string) => void;
 }
 
 export default function DashboardPage({
@@ -27,14 +26,14 @@ export default function DashboardPage({
   HotVotes,
   UserID,
   PartyCode,
-  PlaylistID
+  PlaylistID,
+  onPartyJoin
 }: DashboardProps) {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [hotTracks, setHotTracks] = useState<Song[]>(HotJson);
   const [hotVotes, setHotVotes] = useState<Vote[]>(HotVotes);
   const [playedTracks, setPlayedTracks] = useState<Song[]>(PlayedJson);
   const router = useRouter();
-  const dispatch = useDispatch();
   const refreshHotTracks = async () => {
     try {
       const encodedCode = encodeURIComponent(PartyCode);
@@ -43,10 +42,14 @@ export default function DashboardPage({
         throw new Error('Failed to fetch dashboard data');
       }
       const data = await response.json();
-      console.log('Refreshed dashboard data:', data);
+      
+      // Update all states to trigger re-render
       setHotTracks(data.HotJson);
       setHotVotes(data.HotVotes);
       setPlayedTracks(data.PlayedJson);
+      
+      // Force a re-render by updating a state
+      setPlaylists(prevPlaylists => [...prevPlaylists]);
     } catch (error) {
       console.error('Error refreshing dashboard data:', error);
     }
@@ -59,12 +62,9 @@ export default function DashboardPage({
         const data = await response.json();
         
         if (!response.ok || !data.authenticated) {
-          console.log('Not authenticated, redirecting to login');
           router.push('/login');
           return;
         }
-        
-        console.log('User authenticated:', data.user);
       } catch (error) {
         console.error('Auth check failed:', error);
         router.push('/login');
@@ -82,7 +82,6 @@ export default function DashboardPage({
           throw new Error('Failed to fetch playlists');
         }
         const data = await response.json();
-        console.log('Fetched playlists:', data);
         setPlaylists(data);
       } catch (err) {
         console.error('Error fetching playlists:', err);
@@ -94,8 +93,6 @@ export default function DashboardPage({
 
   const handleVote = async (track: Song, voteType: 'upvote' | 'downvote') => {
     try {
-      console.log('Handling vote:', { track, voteType, userID: UserID, playlistID: PlaylistID });
-      
       const response = await fetch(`/api/${voteType}`, {
         method: 'POST',
         headers: {
@@ -110,12 +107,10 @@ export default function DashboardPage({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Vote error response:', errorData);
         throw new Error(errorData.error || `Failed to ${voteType}`);
       }
 
       const result = await response.json();
-      console.log('Vote result:', result);
       
       // Update the local state with the new vote count
       setHotTracks(prevTracks => 
@@ -164,21 +159,44 @@ export default function DashboardPage({
   };
 
   const handleJoinPlaylist = async (playlistId: string) => {
-    const response = await fetch(`/api/join-party/${playlistId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include' // Include cookies in the request
-    });
-    console.log('Joined playlist:', response);
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Joined playlist:', data);
-      dispatch(setPartyCode(data.partyCode));
-      dispatch(setPlaylistID(playlistId));
-      router.push(`/dashboard?code=${data.partyCode}`);
-      refreshHotTracks();
+    try {
+      const response = await fetch(`/api/join-party/${playlistId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update parent state through callback
+        if (onPartyJoin && data.partyCode) {
+          await onPartyJoin(data.partyCode, playlistId);
+        }
+
+        // Clear existing tracks
+        setHotTracks([]);
+        setHotVotes([]);
+        setPlayedTracks([]);
+        
+        // Refresh hot tracks with new party code
+        const refreshResponse = await fetch(`/api/dashboard/${encodeURIComponent(data.partyCode)}`);
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          setHotTracks(refreshData.HotJson);
+          setHotVotes(refreshData.HotVotes);
+          setPlayedTracks(refreshData.PlayedJson);
+        }
+        
+        // Force a complete page refresh with the new party code
+        router.push(`/dashboard?code=${data.partyCode}`);
+      } else {
+        console.error('Failed to join playlist');
+      }
+    } catch (error) {
+      console.error('Error joining playlist:', error);
     }
   };
 

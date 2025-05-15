@@ -1,13 +1,15 @@
 'use client'
 import Dashboard from '@/components/Dashboard';
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store';
 import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 import { useSearchParams } from 'next/navigation';
+import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 
 export default function Page() {
+  const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
   const playlistID = useSelector((state: RootState) => state.party.playlistID ?? '');
   const partyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
@@ -19,35 +21,47 @@ export default function Page() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const handlePartyJoin = async (newPartyCode: string, newPlaylistId: string) => {
+    dispatch(setPartyCode(newPartyCode));
+    dispatch(setPlaylistID(newPlaylistId));
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get party code from URL if not in Redux store
-        const code = partyCode || searchParams?.get('code');
-        console.log('Party code from store:', partyCode);
-        console.log('Party code from URL:', searchParams?.get('code'));
-        console.log('Selected code:', code);
+        // Prioritize URL code over Redux state
+        const code = searchParams?.get('code') || partyCode;
 
-        const encodedCode = encodeURIComponent(code || '');
-        console.log('Fetching dashboard data for code:', code);
+        if (!code) {
+          setData({
+            PlayedJson: [],
+            HotJson: [],
+            HotVotes: []
+          });
+          return;
+        }
+
+        const encodedCode = encodeURIComponent(code);
         const response = await fetch(`/api/dashboard/${encodedCode}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
           },
-          credentials: 'include' // Include cookies in the request
+          credentials: 'include'
         });
 
-        console.log('Dashboard API response status:', response.status);
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Dashboard API error:', errorData);
           throw new Error(errorData.error || 'Failed to fetch dashboard data');
         }
 
         const dashboardData = await response.json();
-        console.log('Dashboard data received:', dashboardData);
         setData(dashboardData);
+
+        // Update Redux state with the code from URL if it exists
+        if (searchParams?.get('code')) {
+          dispatch(setPartyCode(searchParams.get('code')!));
+        }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
@@ -55,12 +69,9 @@ export default function Page() {
     };
 
     if (userId) {
-      console.log('User ID found, fetching data...');
       fetchData();
-    } else {
-      console.log('No user ID found, skipping data fetch');
     }
-  }, [userId, partyCode, searchParams]);
+  }, [userId, partyCode, searchParams, dispatch]);
 
   if (error) {
     return <div className="flex items-center justify-center h-screen text-red-500">{error}</div>;
@@ -77,8 +88,9 @@ export default function Page() {
         HotJson={data.HotJson}
         HotVotes={data.HotVotes}
         UserID={userId}
-        PartyCode={partyCode || searchParams?.get('code') || ''}
+        PartyCode={searchParams?.get('code') || partyCode || ''}
         PlaylistID={playlistID}
+        onPartyJoin={handlePartyJoin}
       />
     </div>
   );
