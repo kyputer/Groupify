@@ -52,7 +52,21 @@ export default function Page() {
         }
     };
 
-    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = async (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+            e.preventDefault();
+            const pastedText = await navigator.clipboard.readText();
+            const newParty = [...party];
+            for (let i = 0; i < pastedText.length && i < 8; i++) {
+                newParty[i] = pastedText.charAt(i);
+            }
+            setParty(newParty);
+            if (pastedText.length < 8) {
+                inputRefs.current[pastedText.length]?.focus();
+            } 
+            
+            return;
+        }
         switch (e.key) {
             case 'Backspace':
                 if (!party[index] && index > 0) {

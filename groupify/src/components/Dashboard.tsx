@@ -229,7 +229,7 @@ export default function DashboardPage({
         )}
 
         <h2 className="section-title">Playlists</h2>  
-        <div className="playlist-section overflow-auto pt-[5rem]">
+        <div className="playlist-section overflow-auto pt-24">
           <div className="playlist-container overflow-y-scroll">
             {playlists.length > 0 ? (
               playlists.map((playlist) => (
