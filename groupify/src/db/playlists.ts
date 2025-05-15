@@ -156,23 +156,26 @@ export async function joinPlaylistWithID(playlistID: string, userID: string): Pr
   const conn = await getDBConnection();
   try {
     // Check if the user exists
+
     const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [userID]);
     if (userCheck.length === 0) {
       throw new Error(`User with ID ${userID} does not exist.`);
     }
-
+    console.log('User exists');
     // Check if the playlist exists
-    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    const codeCheck = await conn.query('SELECT code FROM playlists WHERE PlaylistID = ?', [playlistID]);
     if (codeCheck.length === 0) {
       throw new Error(`Playlist with code ${playlistID} does not exist.`);
     }
-
+    console.log('Playlist exists');
     // Check if the user is already in the playlist
     const joinCheck = await conn.query('SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?', [userID, playlistID]);
     if (joinCheck.length > 0) {
+      console.log('User is already in playlist');
+      await conn.query('UPDATE playlist_users SET Joined = TRUE WHERE PlaylistUserID = ?', [joinCheck[0].PlaylistUserID])
       return codeCheck[0].code;
     }
-
+    console.log('User is not in playlist');
     await conn.query(
       `INSERT INTO playlist_users (PlaylistID, UserID)
       VALUES (?, ?)`, [playlistID, userID])

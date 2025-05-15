@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
 import { LogOutButton } from './LogOutButton';
 import SongCard from './SongCard';
+import { useDispatch } from 'react-redux';
+import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 
 
 interface DashboardProps {
@@ -32,7 +34,7 @@ export default function DashboardPage({
   const [hotVotes, setHotVotes] = useState<Vote[]>(HotVotes);
   const [playedTracks, setPlayedTracks] = useState<Song[]>(PlayedJson);
   const router = useRouter();
-
+  const dispatch = useDispatch();
   const refreshHotTracks = async () => {
     try {
       const encodedCode = encodeURIComponent(PartyCode);
@@ -162,16 +164,20 @@ export default function DashboardPage({
   };
 
   const handleJoinPlaylist = async (playlistId: string) => {
-    const success = await fetch(`/api/join-party/${playlistId}`, {
+    const response = await fetch(`/api/join-party/${playlistId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include' // Include cookies in the request
     });
-    if (success.ok) {
-      const data = await success.json();
+    console.log('Joined playlist:', response);
+    if (response.ok) {
+      const data = await response.json();
       console.log('Joined playlist:', data);
+      dispatch(setPartyCode(data.partyCode));
+      dispatch(setPlaylistID(playlistId));
+      router.push(`/dashboard?code=${data.partyCode}`);
       refreshHotTracks();
     }
   };

@@ -25,7 +25,7 @@ export default function HomePage() {
         
         if (!response.ok || !data.authenticated) {
           console.log('Not authenticated, redirecting to login');
-          router.push('/login');
+          router.push('/');
           return;
         }
         
@@ -33,7 +33,7 @@ export default function HomePage() {
         setIsLoading(false);
       } catch (err) {
         console.error('Auth check failed:', err);
-        router.push('/login');
+        router.push('/');
       }
     };
 
