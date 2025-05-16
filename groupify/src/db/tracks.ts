@@ -434,6 +434,11 @@ async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTra
 
 async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userID: number): Promise<void> {
   console.log(`Adding track: ${track.id} to playlist: ${playlistID}`);
+  
+  if (!playlistID || isNaN(playlistID)) {
+    throw new Error(`Invalid PlaylistID: ${playlistID}`);
+  }
+
   let conn;
   try {
     conn = await getDBConnection();

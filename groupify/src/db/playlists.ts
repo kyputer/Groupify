@@ -1,5 +1,6 @@
 import { getDBConnection } from '@/lib/db';
 import { Playlist } from '@/interfaces/Playlist';
+import { createSpotifyPlaylist } from '@/lib/spotify';
 
 const playlists = {
   createPlaylist,
@@ -32,6 +33,9 @@ export async function createPlaylist(
       throw new Error(`Code ${code} is already in use.`);
     }
     
+    // TODO: Spotify playlist creation and then link data
+    createSpotifyPlaylist(name, createdBy, isPublic, description);
+    //
     console.log(`Creating playlist with code: ${code} and name: ${name} and description: ${description}`);
     const result = await conn.query(
       `INSERT INTO playlists (name, code, created_at, created_by, is_public, description)

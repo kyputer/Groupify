@@ -97,6 +97,40 @@ export async function getTrackDetails(trackId: string): Promise<SpotifyTrack | n
   }
 }
 
+export async function createSpotifyPlaylist(
+  name: string,
+  description: string,
+  isPublic: boolean,
+  spotify_user_id: string
+): Promise<any> {
+  if (!await ensureValidToken()) {
+    throw new Error('Failed to initialize Spotify API');
+  }
+
+  const access_token = spotifyApi.getAccessToken();
+  if (!access_token) {
+    throw new Error('No access token available');
+  }
+  const userId = await getSpotifyUserId();
+  const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${access_token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: name,
+    public: isPublic,
+    description: description
+  })
+});
+  const resJson = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Error creating Spotify playlist: ${resJson.error.message}`);
+  }
+}
+
 export async function getMultipleTrackDetails(trackIds: string[]): Promise<SpotifyTrack[]> {
   if (!await ensureValidToken()) {
     throw new Error('Failed to initialize Spotify API');
@@ -111,10 +145,24 @@ export async function getMultipleTrackDetails(trackIds: string[]): Promise<Spoti
   }
 }
 
-export  function formatDuration(ms: number): string {
+export async function getSpotifyUserId(): Promise<string> {
+  if (!await ensureValidToken()) {
+    throw new Error('Failed to initialize Spotify API');
+  }
+
+  try {
+    const response = await spotifyApi.getMe();
+    return response.body.id; // Returns the Spotify user ID
+  } catch (error) {
+    console.error('Error fetching Spotify user ID:', error);
+    throw error;
+  }
+}
+
+export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
-export default spotifyApi; 
+export default spotifyApi;
