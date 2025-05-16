@@ -25,7 +25,11 @@ async function refreshAccessToken() {
 
 async function ensureValidToken() {
   if (!accessToken || Date.now() >= tokenExpirationTime) {
-    return await refreshAccessToken();
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      console.error('Failed to refresh Spotify access token');
+      return false;
+    }
   }
   return true;
 }
@@ -111,23 +115,21 @@ export async function createSpotifyPlaylist(
   if (!access_token) {
     throw new Error('No access token available');
   }
-  const userId = await getSpotifyUserId();
-  const response = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: name,
-    public: isPublic,
-    description: description
-  })
-});
-  const resJson = await response.json();
 
-  if (!response.ok) {
-    throw new Error(`Error creating Spotify playlist: ${resJson.error.message}`);
+  try {
+    // Ensure the user-specific token is set
+    // const userAccessToken = await spotifyApi.getAccessToken(); // Implement this function to fetch the user's token
+    // spotifyApi.setAccessToken(userAccessToken);
+
+    const response = await spotifyApi.createPlaylist(name, {
+      description,
+      public: isPublic,
+    });
+
+    return response.body; // Return the created playlist details
+  } catch (error) {
+    console.error('Error creating Spotify playlist:', error);
+    throw error;
   }
 }
 
@@ -145,12 +147,50 @@ export async function getMultipleTrackDetails(trackIds: string[]): Promise<Spoti
   }
 }
 
+export function getAuthorizationUrl(): string {
+  return spotifyApi.createAuthorizeURL(
+    ['user-read-private', 'user-read-email'], // Scopes
+    'state' // Optional state parameter
+  );
+}
+
+export async function handleAuthorizationCallback(code: string): Promise<void> {
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    accessToken = data.body['access_token'];
+    tokenExpirationTime = Date.now() + data.body['expires_in'] * 1000;
+    spotifyApi.setAccessToken(accessToken);
+    spotifyApi.setRefreshToken(data.body['refresh_token']);
+  } catch (error) {
+    console.error('Error handling authorization callback:', error);
+    throw error;
+  }
+}
+
+export async function refreshUserAccessToken(): Promise<void> {
+  try {
+    const data = await spotifyApi.refreshAccessToken();
+    accessToken = data.body['access_token'];
+    tokenExpirationTime = Date.now() + data.body['expires_in'] * 1000;
+    spotifyApi.setAccessToken(accessToken);
+  } catch (error) {
+    console.error('Error refreshing user access token:', error);
+    throw error;
+  }
+}
+
 export async function getSpotifyUserId(): Promise<string> {
   if (!await ensureValidToken()) {
     throw new Error('Failed to initialize Spotify API');
   }
 
+  const accessToken = spotifyApi.getAccessToken();
+  if (!accessToken) {
+    throw new Error('No access token available');
+  }
+
   try {
+    spotifyApi.setAccessToken(accessToken); // Ensure the token is set
     const response = await spotifyApi.getMe();
     return response.body.id; // Returns the Spotify user ID
   } catch (error) {
