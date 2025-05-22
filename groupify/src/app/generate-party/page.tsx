@@ -1,23 +1,30 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPartyCodeOwner, clearPartyCode, setPlaylistID } from '@/lib/features/partySlice';
 import { RootState } from '@/lib/store';
 import { BooleanDropdown } from '@/components/BooleanDropdown';
 import { CopyButton } from '@/components/CopyButton';
+import { RainbowButton } from '@/components/RainbowButton';
 import { validateInput } from '@/lib/utils';
-
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [isMounted, setIsMounted] = useState(false);
+    const router = useRouter();
     const dispatch = useDispatch();
     const userId = useSelector((state: RootState) => state.user.userId);
     const partyTimestamp = useSelector((state: RootState) => state.party.timestamp);
     const selectedPartyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
     const [isPublic, setIsPublic] = useState(true);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setName(e.target.value);
@@ -85,19 +92,22 @@ export default function Page() {
     const isPartyCodeEmpty = selectedPartyCode === '';
     const isPartyCodeValid = (isPartyCodeExpired && isPartyCodeEmpty);
 
+    if (!isMounted) {
+        return null;
+    }
+
     return (
-        <div>
-            <div className="flex flex-col items-center justify-center h-screen">
-                <div className="flex flex-col items-center justify-center"></div>
-                <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
-                <h1 className="text-2xl font-bold mb-4 pt-6 text-center">Generate Party</h1>
-                {error && <p className="text-red-500 mt-2">{error}</p>}
-                <p className="mb-4 text-center">Generate a party code to invite your friends to join you.</p>
+        <div className="generate-party-container">
+            <div className="generate-party-content">
+                <h1 className="generate-party-title">Generate Party</h1>
+                <p className="generate-party-description">Generate a party code to invite your friends to join you.</p>
+                
+                {error && <p className="error-message">{error}</p>}
                 
                 {isPartyCodeValid && (
-                    <div className="w-full max-w-md space-y-4 mb-4">
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <div className="generate-party-form">
+                        <div className="form-group">
+                            <label htmlFor="name" className="form-label">
                                 Party Name
                             </label>
                             <input
@@ -106,15 +116,15 @@ export default function Page() {
                                 maxLength={32}
                                 value={name}
                                 onChange={handleNameChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6B6B] focus:border-[#FF6B6B] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                className="form-input"
                                 placeholder="Enter party name"
                                 required
                             />
                             <p className="text-xs text-gray-500 mt-1">{name.length}/32 characters</p>
                         </div>
 
-                        <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <div className="form-group">
+                            <label htmlFor="description" className="form-label">
                                 Description
                             </label>
                             <textarea
@@ -122,7 +132,7 @@ export default function Page() {
                                 maxLength={256}
                                 value={description}
                                 onChange={handleDescriptionChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6B6B] focus:border-[#FF6B6B] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                className="form-input"
                                 placeholder="Enter party description"
                                 rows={3}
                             />
@@ -133,34 +143,42 @@ export default function Page() {
                             value={isPublic}
                             onChange={setIsPublic}
                             label="Party Visibility"
-                            className="mb-4 justify-center"
+                            className="mb-4"
                             labelPosition="left"
                             options={[
                                 { label: 'Public', value: true },
                                 { label: 'Private', value: false }
                             ]}
                         />
+
+                        <button 
+                            className={`generate-button ${!isPartyCodeValid ? 'disabled' : ''}`}
+                            onClick={generatePartyCode}
+                            disabled={!isPartyCodeValid}
+                        >
+                            Generate Party
+                        </button>
                     </div>
                 )}
 
-                <button 
-                    className={`px-4 py-2 rounded-md ${!isPartyCodeValid ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#FF6B6B] hover:bg-[#fd4343]'} text-white`} 
-                    onClick={generatePartyCode}
-                    disabled={!isPartyCodeValid}
-                >
-                    Generate Party
-                </button>
-
                 {!isPartyCodeValid && (
-                    <div className="flex flex-col items-center justify-center">
-                        <div className="flex flex-row items-center justify-center">
-                            <p className="mb-4 text-center text-white bg-gray-800 px-4 py-2 rounded-md mt-4">Party code: <b className="font-bold text-[#FF6B6B] text-xl">{selectedPartyCode}</b></p>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <p className="text-white bg-gray-800 px-4 py-2 rounded-md">
+                                Party code: <span className="font-bold text-[#FF6B6B] text-xl">{selectedPartyCode}</span>
+                            </p>
                             <CopyButton value={selectedPartyCode} />
                         </div>
-                        <button className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 ml-4" onClick={() => dispatch(clearPartyCode())}>Reset</button>
+                        <button 
+                            className="generate-button"
+                            onClick={() => dispatch(clearPartyCode())}
+                        >
+                            Reset
+                        </button>
+                        <RainbowButton text="Dashboard" href="/dashboard" />
                     </div>
                 )}
             </div>
         </div>
-    )
+    );
 }

@@ -3,11 +3,21 @@ import { getAllPublicPlaylists, createPlaylist, getUserPlaylists } from '@/db/pl
 
 export async function GET(request: NextRequest) {
   try {
+    console.log( __filename, "Getting all public playlists");
     const playlists = await getAllPublicPlaylists();
     const session = request.cookies.get('session')?.value;
+    console.log( __filename, " Session value:", session);
     if (session) {
       const userPlaylists = await getUserPlaylists(session);
-      playlists.push(...userPlaylists);
+      console.log( __filename, " User playlists:", userPlaylists);
+      for (const playlist of userPlaylists) {
+        const index = playlists.findIndex(p => p.id === playlist.id);
+        if (index !== -1) {
+          playlists[index].isJoined = true;
+        } else {
+          playlists.push(playlist);
+        }
+      }
     }
     playlists.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json(playlists);

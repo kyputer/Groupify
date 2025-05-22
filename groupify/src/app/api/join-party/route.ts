@@ -1,10 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import playlists from '@/db/playlists';
 
-export async function POST(request: Request) {    
+export async function POST(request: NextRequest) {    
     try {
-        const { UserID, PartyCode } = await request.json();
-        const PlaylistID = await playlists.joinPlaylist(PartyCode, UserID);
+        const { PartyCode } = await request.json();
+        const session = request.cookies.get('session')?.value;
+
+        if (!session) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+        
+        if (!PartyCode) {
+            return NextResponse.json(
+                { error: 'Party code is required' },
+                { status: 400 }
+            );
+        }
+
+        const PlaylistID = await playlists.joinPlaylist(PartyCode, session);
+        
+        if (!PlaylistID) {
+            return NextResponse.json(
+                { error: 'Invalid party code' },
+                { status: 404 }
+            );
+        }
+
         return NextResponse.json({
             success: true,
             message: "Joined party successfully",

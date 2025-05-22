@@ -3,4 +3,4 @@ export interface Vote {
   SpotifyID: string;
   Votes: number;
   Selected: string | null;
-}
+  }

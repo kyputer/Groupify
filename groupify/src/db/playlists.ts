@@ -50,7 +50,8 @@ export async function createPlaylist(
       createdAt: new Date().toISOString(),
       createdBy: createdBy.toString(), // Convert BigInt to string
       isPublic,
-      description
+      description,
+      isJoined: true
     };
   } catch (error) {
     console.error('Error creating playlist in database:', error);
@@ -75,6 +76,8 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
       createdAt: row.created_at,
       createdBy: row.created_by,
       isPublic: row.is_public === 1,
+      description: row.description,
+      isJoined: false
     }));
   } finally {
     conn.release();
@@ -89,7 +92,6 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
       LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
       WHERE playlist_users.UserID = ?
       AND playlist_users.Joined = 1
-      AND playlists.is_public = 0
       ORDER BY playlists.created_at DESC`, [userID]);
     return rows.map((row: any) => ({
       id: row.PlaylistID,
@@ -98,6 +100,8 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
       createdAt: row.created_at,
       createdBy: row.created_by,
       isPublic: row.is_public === 1,
+      description: row.description,
+      isJoined: true
     }));
   } finally {
     conn.release();

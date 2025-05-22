@@ -3,7 +3,7 @@ import { findById } from '@/db/users';
 
 export async function GET(request: Request) {
   try {
-    const cookies = request.headers.get('cookie');
+  const cookies = request.headers.get('cookie');
     console.log('Raw cookies:', cookies);
 
     if (!cookies) {

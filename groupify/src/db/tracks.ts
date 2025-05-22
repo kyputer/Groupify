@@ -470,18 +470,23 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
       );
       trackID = result.insertId;
       console.log('New track inserted:', trackID);
-    } else {
-      trackID = trackRows[0].id;
-      console.log('Existing track found:', trackID);
-    }
 
-  
-    // Add track to playlist
-    await conn.query(
+      // Add track to playlist
+      await conn.query(
       'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
       [playlistID, trackID]
     );
     console.log(`Track ${trackID} added to playlist ${playlistID}`);
+    } else {
+      trackID = trackRows[0].id;
+      console.log('Existing track found:', trackID);
+      // Update the track's votes to += 1
+      await conn.query(
+        'UPDATE tracks SET votes = votes + 1 WHERE id = ?;',
+        [trackID]
+      );
+    }
+
     // Check if user has already voted on this track
     const voteRows = await conn.query(
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',

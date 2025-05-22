@@ -6,4 +6,5 @@ export interface Playlist {
     createdBy: string;
     isPublic: boolean;
     description: string;
+    isJoined: boolean;
   }

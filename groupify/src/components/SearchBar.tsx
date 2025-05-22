@@ -17,7 +17,8 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
   const [error, setError] = useState<string | null>(null);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
-  
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,9 +88,41 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
     console.log("Selected song: ", song);
     try {
       const response = await fetch('/api/playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Track: song, PlaylistID: playlistID, UserID: UserID }),
+    });
+
+      if (!response.ok) {
+        throw new Error('Failed to add track to playlist');
+      }
+
+      // Call the onTrackAdded callback if provided
+      if (onTrackAdded) {
+        await onTrackAdded();
+      }
+    } catch (error) {
+      console.error('Error adding track:', error);
+      setError('Failed to add track to playlist');
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+  };
+
+  const handleTrackSelect = async (track: SpotifyTrack) => {
+    setQuery('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setError(null);
+
+    console.log("Selected song: ", track);
+    try {
+      const response = await fetch('/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Track: song, PlaylistID: playlistID, UserID: UserID }),
+        body: JSON.stringify({ Track: track, PlaylistID: playlistID, UserID: UserID }),
       });
 
       if (!response.ok) {
@@ -115,8 +148,17 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
             type="text"
             placeholder="Search songs, artists, playlists..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setShowSuggestions(true)}
+            onChange={handleInputChange}
+            onFocus={() => {
+              setShowSuggestions(true);
+              setIsFocused(true);
+            }}
+            onBlur={() => {
+              setTimeout(() => {
+                setShowSuggestions(false);
+                setIsFocused(false);
+              }, 200);
+            }}
           />
         </div>
         {error && (
@@ -125,35 +167,31 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="results transition visible rounded-t-lg border-separate max-h-[400px] overflow-y-auto mt-[10px] absolute w-full z-50 bg-[#242424] shadow-lg">
+          <div className={`search-results ${!isFocused ? 'hidden' : ''}`}>
             {suggestions.map((song) => (
               <div
                 key={song.id}
-                className="result"
+                className="search-result-item"
                 onClick={() => handleSelect(song)}
               >
-                <div className="content cursor-pointer bg-[#242424] py-4 flex items-center justify-between hover:bg-[#2a2a2a]">
-                  <div className="flex items-center w-full pl-4">
-                    <img 
-                      src={song.album.images[0]?.url || '/default-album.png'} 
-                      alt={song.name}
-                      className="w-24 h-24 rounded-lg object-cover mr-4"
-                    />
-                    <div className="song-info">
-                      <div className="title song-name pl-4 flex items-center gap-2">
-                        {song.name}
-                        {song.explicit && (
-                          <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">E</span>
-                        )}
-                      </div>
-                      <div className="description artist-name pl-4">
-                        {song.artists.map((artist: any) => artist.name).join(' & ')}
-                      </div>
-                    </div>
+                <img 
+                  src={song.album.images[0]?.url || '/default-album.png'} 
+                  alt={song.name}
+                  className="search-result-image"
+                />
+                <div className="search-result-info">
+                  <div className="search-result-name">
+                    {song.name}
+                    {song.explicit && (
+                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded ml-2">E</span>
+                    )}
                   </div>
-                  <div className="duration pr-4 text-gray-400">
-                    {formatDuration(song.duration_ms)}
+                  <div className="search-result-artist">
+                    {song.artists.map((artist: any) => artist.name).join(' & ')}
                   </div>
+                  </div>
+                <div className="text-gray-400 text-sm">
+                  {formatDuration(song.duration_ms)}
                 </div>
               </div>
             ))}

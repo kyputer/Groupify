@@ -8,7 +8,7 @@ export const LogOutButton = () => {
     const handleLogout = async () => {
         await fetch('/api/logout', { method: 'POST' });
         dispatch(resetAll());
-        window.location.href = '/login'; // Redirect to login page
+        window.location.href = '/'; // Redirect to login page
       };
 
     return (
