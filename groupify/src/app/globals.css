@@ -87,7 +87,7 @@ body {
 
 .search-input {
   width: 100%;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.5rem 0.75rem 3rem;
   border-radius: 25px;
   border: none;
   background-color: var(--card-bg);
@@ -323,11 +323,9 @@ body {
   }
 
   .search-input {
-    width: 100%;
-    padding: 1rem;
+    padding: 1rem 1rem 1rem 3rem;
     font-size: 1rem;
     border-radius: 12px;
-    background-color: var(--card-bg);
   }
 
   .search-results {
