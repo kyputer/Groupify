@@ -34,7 +34,8 @@ export async function createPlaylist(
     }
     
     // TODO: Spotify playlist creation and then link data
-    createSpotifyPlaylist(name, createdBy, isPublic, description);
+    const splaylistres = createSpotifyPlaylist(name, createdBy, isPublic, description);
+    console.log('Spotify playlist creation response:', splaylistres);
     //
     console.log(`Creating playlist with code: ${code} and name: ${name} and description: ${description}`);
     const result = await conn.query(

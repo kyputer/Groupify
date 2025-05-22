@@ -37,6 +37,9 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
       trackID = trackRows[0].id;
     }
 
+
+    console.log('Upvote: Adding track to playlist:', trackID, playlistID);
+    // Is this even needed? A track will not be upvoted if it is not in the playlist already
     await conn.query(
       'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
       [playlistID, trackID]
@@ -471,8 +474,8 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
       trackID = result.insertId;
       console.log('New track inserted:', trackID);
 
-      // Add track to playlist
-      await conn.query(
+          // Add track to playlist
+    await conn.query(
       'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
       [playlistID, trackID]
     );
