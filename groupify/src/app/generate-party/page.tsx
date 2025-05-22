@@ -8,16 +8,13 @@ import { BooleanDropdown } from '@/components/BooleanDropdown';
 import { CopyButton } from '@/components/CopyButton';
 import { RainbowButton } from '@/components/RainbowButton';
 import { validateInput } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 
 export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isMounted, setIsMounted] = useState(false);
-    const router = useRouter();
     const dispatch = useDispatch();
-    const userId = useSelector((state: RootState) => state.user.userId);
     const partyTimestamp = useSelector((state: RootState) => state.party.timestamp);
     const selectedPartyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
     const [isPublic, setIsPublic] = useState(true);

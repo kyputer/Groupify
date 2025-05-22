@@ -1,8 +1,4 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { Song } from '@/interfaces/Song';
-import { Vote } from '@/interfaces/Vote';
-import tracks from '@/db/tracks';
-import { getPlaylistID } from '@/db/playlists';
 
 export async function GET(
   request: NextRequest

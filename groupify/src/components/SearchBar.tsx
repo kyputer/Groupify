@@ -18,7 +18,6 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
