@@ -126,10 +126,10 @@ export default function DashboardPage({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          UserID,
           SpotifyID: track.id,
           Code: PartyCode
         }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -334,7 +334,7 @@ export default function DashboardPage({
           <h2 className="text-white text-xl">
             Party Code: <span className="text-[#FF6B6B] font-bold">{PartyCode}</span>
           </h2>
-          <LeavePartyButton PartyCode={PartyCode} UserID={UserID} />
+          <LeavePartyButton PartyCode={PartyCode} />
         </div>
         )}
 

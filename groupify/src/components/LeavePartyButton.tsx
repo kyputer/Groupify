@@ -5,11 +5,10 @@ import { clearPartyCode } from '@/lib/features/partySlice';
 
 interface LeavePartyButtonProps {
     PartyCode: string;
-    UserID: string;
 }
 
 
-export const LeavePartyButton = ({ PartyCode, UserID }: LeavePartyButtonProps) => {
+export const LeavePartyButton = ({ PartyCode }: LeavePartyButtonProps) => {
     const dispatch = useDispatch();
     const router = useRouter();
     
@@ -19,10 +18,11 @@ export const LeavePartyButton = ({ PartyCode, UserID }: LeavePartyButtonProps) =
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ PartyCode: PartyCode, UserID: UserID }),
+            body: JSON.stringify({ PartyCode: PartyCode}),
+            credentials: 'include'
         });
         dispatch(clearPartyCode());
-        router.push('/');
+        router.push('/dashboard');
     }
     
     return (

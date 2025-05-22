@@ -1,10 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import tracks from '@/db/tracks';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const {Track, PlaylistID, UserID} = await request.json();
-    await tracks.addTrackToPlaylist(Track, PlaylistID, UserID);
+    const {Track, PlaylistID} = await request.json();
+    const session = request.cookies.get('session')?.value;
+    if (!session) {
+      console.log('No session found');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    await tracks.addTrackToPlaylist(Track, PlaylistID, parseInt(session));
     return NextResponse.json({
         success: true,
         message: 'Track added to playlist',

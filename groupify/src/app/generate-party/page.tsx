@@ -57,11 +57,11 @@ export default function Page() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ 
-                        UserID: userId, 
                         isPublic: isPublic,
                         Name: name,
                         Description: description || '' // Send empty string if no description
-                    })
+                    }),
+                    credentials: 'include'
                 }
             );
 

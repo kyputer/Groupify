@@ -90,7 +90,8 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
       const response = await fetch('/api/playlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Track: song, PlaylistID: playlistID, UserID: UserID }),
+      body: JSON.stringify({ Track: song, PlaylistID: playlistID }),
+      credentials: 'include'
     });
 
       if (!response.ok) {

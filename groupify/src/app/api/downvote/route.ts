@@ -1,14 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import tracks from '@/db/tracks';
 import { getPlaylistID } from '@/db/playlists';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { UserID, SpotifyID, Code } = await request.json();
-
-    if (!UserID || !SpotifyID) {
+    const { SpotifyID, Code } = await request.json();
+    const session = request.cookies.get('session')?.value;
+    if (!session) {
+      console.log('No session found');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    if ( !SpotifyID) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -31,7 +38,7 @@ export async function POST(request: Request) {
       href: ''
     };
 
-    const result = await tracks.downvote(track, parseInt(UserID), playlistID);
+    const result = await tracks.downvote(track, parseInt(session), playlistID);
     console.log('Downvote result:', result);
 
     return NextResponse.json(result);
