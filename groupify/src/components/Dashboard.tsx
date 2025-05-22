@@ -10,6 +10,7 @@ import { LogOutButton } from './LogOutButton';
 import SongCard from './SongCard';
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs"
 import "react-tabs/style/react-tabs.css"
+import { RainbowButton } from './RainbowButton';
 
 interface DashboardProps {
   PlayedJson: Song[];
@@ -376,13 +377,20 @@ export default function DashboardPage({
                     </div>
                   </div>
                 ))}
+                
               </>
+              
             ) : (
               <div className="text-gray-500 text-center w-full py-8">
                 No playlists available. Create one to get started!
               </div>
             )}
           </div>
+          <div className='text-gray-500 text-center pt-10 flex flex-col items-center gap-4'>
+              Have a party code? Join a playlist!
+              <RainbowButton href='/join-party' text='Join the party' className='mt-4'/>
+            </div>
+
         </div>
       </div>
         </TabPanel>
