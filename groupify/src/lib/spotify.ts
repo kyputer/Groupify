@@ -174,7 +174,8 @@ export async function refreshUserAccessToken(): Promise<void> {
     tokenExpirationTime = Date.now() + data.body['expires_in'] * 1000;
     spotifyApi.setAccessToken(accessToken);
   } catch (error) {
-    console.error('Error refreshing user access token:', error);
+    console.error('Error refreshing user access token:', JSON.stringify(error));
+    console.log('MY BUTT');
     throw error;
   }
 }
