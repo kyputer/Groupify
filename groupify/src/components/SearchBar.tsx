@@ -6,10 +6,20 @@ import { formatDuration } from '@/lib/utils';
 interface SearchBarProps {
   UserID: string;
   playlistID: string;
+  playlistName: string;
+  playlistDescription: string;
+  playlistIsPublic: boolean;
   onTrackAdded?: () => Promise<void>;
 }
 
-const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
+const SearchBar = ({
+  UserID,
+  playlistID,
+  playlistName,
+  playlistDescription,
+  playlistIsPublic,
+  onTrackAdded
+}: SearchBarProps) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,15 +130,17 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
     setShowSuggestions(false);
     setError(null);
 
-    console.log("Selected song: ", track);
+    // Use props directly
     try {
       const response = await fetch('/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          TrackID: track.id,          // <-- Only send the track ID
-          PlaylistID: playlistID,
-          UserID: UserID              // If your backend expects this
+          playlistCode: playlistID,
+          trackId: track.id,
+          name: playlistName,
+          description: playlistDescription,
+          isPublic: playlistIsPublic
         }),
         credentials: 'include'
       });
