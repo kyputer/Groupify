@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import tracks from '@/db/tracks';
+import playlists from '@/db/playlists';
 
 export async function POST(request: NextRequest) {
   try {
-    const {Track, PlaylistID} = await request.json();
-    const session = request.cookies.get('session')?.value;
-    if (!session) {
-      console.log('No session found');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const { playlistCode, trackId, name, isPublic, description } = await request.json();
+    const userId = request.cookies.get('session')?.value;
+    if (!userId) {
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
-    await tracks.addTrackToPlaylist(Track, PlaylistID, parseInt(session));
-    return NextResponse.json({
-        success: true,
-        message: 'Track added to playlist',
+
+    // Add track and ensure playlist exists
+    const result = await playlists.addTrackToPlaylist({
+      playlistCode,
+      trackId,
+      name,
+      createdBy: userId,
+      isPublic,
+      description
     });
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error adding track to playlist:', error);
-    return NextResponse.json(
-      { error: 'Failed to add track to playlist' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to add track to playlist' }, { status: 500 });
   }
 }

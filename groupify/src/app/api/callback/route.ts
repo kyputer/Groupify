@@ -33,6 +33,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing code, state, or userId' }, { status: 400 });
   }
 
+  console.log('Callback query state:', state);
+  console.log('Callback cookie state:', storedState);
+
   if (state !== storedState) {
     console.error('State mismatch during Spotify callback');
     return NextResponse.json({ error: 'State mismatch' }, { status: 400 });
