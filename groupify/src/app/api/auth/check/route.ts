@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { findById } from '@/db/users';
+import SpotifyWebApi from 'spotify-web-api-node';
+
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
+});
 
 export async function GET(request: Request) {
   try {
@@ -23,6 +30,7 @@ export async function GET(request: Request) {
     }
 
     const session = sessionCookie.split('=')[1];
+    const userId = session ? parseInt(session, 10) : null;
     console.log('Session value:', session);
 
     if (!session) {

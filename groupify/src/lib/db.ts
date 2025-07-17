@@ -132,6 +132,9 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
           username VARCHAR(50) NOT NULL UNIQUE,
           email VARCHAR(100) DEFAULT NULL,
           password_hash VARCHAR(255) NOT NULL,
+          spotify_refresh_token VARCHAR(512),
+          spotify_access_token VARCHAR(512),
+          spotify_access_token_expires_at BIGINT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);

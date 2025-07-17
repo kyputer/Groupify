@@ -43,7 +43,14 @@ export default function DashboardPage({
     if (authChecked.current) return;
     
     try {
-      const response = await fetch('/api/auth/check');
+      const response = await fetch('/api/auth/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      }
+      );
       const data = await response.json();
       
       if (!response.ok || !data.authenticated) {
@@ -101,7 +108,13 @@ export default function DashboardPage({
   const refreshHotTracks = async () => {
     try {
       const encodedCode = encodeURIComponent(PartyCode);
-      const response = await fetch(`/api/dashboard/${encodedCode}`);
+      const response = await fetch(`/api/dashboard/${encodedCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
       }

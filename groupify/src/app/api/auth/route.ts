@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { findByUsername, register } from '@/db/users';
-import { refreshUserAccessToken } from '@/lib/spotify'; // Ensure this function is imported
+import { refreshUserAccessToken } from '@/lib/spotifyAuth';
 
 export async function POST(request: Request) {
   try {
@@ -17,16 +17,12 @@ export async function POST(request: Request) {
       console.log("Found user:", user);
       
       if (user && bcrypt.compareSync(password, user.password_hash)) {
-        // Refresh and set Spotify access token
-        await refreshUserAccessToken(); // Ensure this function refreshes the token
-
         const response = NextResponse.json({ 
           success: true, 
           message: 'Login successful', 
-          user: user.id.toString() 
+          user: user.id.toString(),
+          needsSpotifyAuth: !user.spotify_refresh_token
         });
-        
-        // Set the session cookie with proper options
         response.cookies.set('session', user.id.toString(), {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -34,7 +30,6 @@ export async function POST(request: Request) {
           path: '/',
           maxAge: 60 * 60 * 24 * 7 // 1 week
         });
-        
         console.log('Session cookie set for user:', user.id);
         return response;
       } else if (user) {
@@ -50,7 +45,6 @@ export async function POST(request: Request) {
         user: user.id.toString() 
       });
       
-      // Set the session cookie with proper options
       response.cookies.set('session', user.id.toString(), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
