@@ -2,6 +2,7 @@ import { getDBConnection } from '@/lib/db';
 import { Playlist } from '@/interfaces/Playlist';
 import { createSpotifyPlaylist } from '@/lib/spotify';
 import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
+import { getTrackDetails } from '@/lib/spotify'; 
 
 const playlists = {
   createPlaylist,
@@ -298,6 +299,28 @@ export async function addTrackToPlaylist({
   const playlist = await ensurePlaylistExists({ name, createdBy, isPublic, code: playlistCode, description });
   const conn = await getDBConnection();
   try {
+    // 1. Ensure track exists in tracks table
+    const [existingTrack] = await conn.query('SELECT * FROM tracks WHERE SpotifyID = ?', [trackId]);
+    if (!existingTrack) {
+      // Fetch from Spotify
+      const track = await getTrackDetails(trackId);
+      if (!track) throw new Error('Track not found on Spotify');
+      await conn.query(
+        `INSERT INTO tracks (SpotifyID, title, artist, url, image, duration_ms, explicit)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          track.id,
+          track.name,
+          track.artists.map(a => a.name).join(', '),
+          track.external_urls.spotify,
+          track.album.images[0]?.url || '',
+          track.duration_ms,
+          track.explicit
+        ]
+      );
+    }
+
+    // 2. Now insert into playlist_tracks
     await conn.query(
       'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
       [playlist.id, trackId]

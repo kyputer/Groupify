@@ -139,10 +139,11 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
         )
       `);
 
+      /* add a playlist field later? Unique constraint?*/
       await conn.query(`
         CREATE TABLE IF NOT EXISTS tracks (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          SpotifyID VARCHAR(22) NOT NULL,
+          SpotifyID VARCHAR(22) NOT NULL UNIQUE,
           title VARCHAR(255) NOT NULL,
           artist VARCHAR(255) NOT NULL,
           url VARCHAR(255) NOT NULL,
@@ -164,11 +165,11 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
       await conn.query(`
         CREATE TABLE IF NOT EXISTS votes (
           id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-          TrackID INT NOT NULL,
+          TrackID VARCHAR(22),
           UserID INT NOT NULL,
           VoteType ENUM('upvote', 'downvote', 'neutral') NOT NULL,
           FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
-          FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE
+          FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE
         )
       `);
 
@@ -194,9 +195,9 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
         CREATE TABLE IF NOT EXISTS playlist_tracks (
           PlaylistTrackID INT AUTO_INCREMENT PRIMARY KEY,
           PlaylistID INT DEFAULT 1 NOT NULL,
-          TrackID INT NOT NULL,
+          TrackID VARCHAR(22),
           FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
-          FOREIGN KEY (TrackID) REFERENCES tracks(id) ON DELETE CASCADE,
+          FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE,
           UNIQUE (PlaylistID, TrackID)
         )
       `);
