@@ -38,7 +38,7 @@ export async function createPlaylist(
     }
 
     // Check for Spotify token
-    const { accessToken } = await getSpotifyTokensForUser(createdBy);
+    const { accessToken } = await getSpotifyTokensForUser(Number(createdBy));
     let splaylistres = null;
     if (accessToken) {
       // Only create Spotify playlist if user has a token

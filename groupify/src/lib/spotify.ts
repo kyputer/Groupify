@@ -109,7 +109,7 @@ export async function createSpotifyPlaylist(
   userId: string // <-- your local user ID
 ): Promise<any> {
   // Get the user's Spotify tokens from DB
-  const { accessToken } = await getSpotifyTokensForUser(userId);
+  const { accessToken } = await getSpotifyTokensForUser(Number(userId));
   if (!accessToken) {
     throw new Error('No Spotify access token available for user');
   }

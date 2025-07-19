@@ -125,6 +125,11 @@ const SearchBar = ({
   };
 
   const handleTrackSelect = async (track: SpotifyTrack) => {
+    if (!playlistID || !playlistName || !playlistDescription) {
+      setError('Please select a playlist before adding tracks.');
+      return;
+    }
+
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);

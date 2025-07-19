@@ -241,6 +241,10 @@ export default function DashboardPage({
     }
   };
 
+  // Find the current playlist object by PlaylistID
+  const currentPlaylist = playlists.find(p => String(p.id) === String(PlaylistID));
+  const isPlaylistSelected = !!currentPlaylist;
+
   return (
     <div className="dashboard-container bg-white dark:bg-gray-900">
       <nav className="navbar">
@@ -248,11 +252,18 @@ export default function DashboardPage({
           <h1 className="logo text-4xl">Groupify</h1>
         </div>
         <div className="navbar-center">
-          <SearchBar 
-            UserID={UserID} 
-            playlistID={PlaylistID} 
-            onTrackAdded={refreshHotTracks}
-          />
+          {isPlaylistSelected ? (
+            <SearchBar
+              UserID={UserID}
+              playlistID={PlaylistID}
+              onTrackAdded={refreshHotTracks}
+              playlistName={currentPlaylist?.name || ''}
+              playlistDescription={currentPlaylist?.description || ''}
+              playlistIsPublic={currentPlaylist?.isPublic ?? false}
+            />
+          ) : (
+            <div className="text-red-500 mt-4">Please select or join a playlist to add tracks.</div>
+          )}
         </div>
         <div className="navbar-right flex flex-col items-center justify-center">
           <LogOutButton/>
