@@ -48,7 +48,14 @@ export default function DashboardPage({
     if (authChecked.current) return;
     
     try {
-      const response = await fetch('/api/auth/check');
+      const response = await fetch('/api/auth/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      }
+      );
       const data = await response.json();
       
       if (!response.ok || !data.authenticated) {
@@ -117,7 +124,13 @@ export default function DashboardPage({
   const refreshHotTracks = async () => {
     try {
       const encodedCode = encodeURIComponent(PartyCode);
-      const response = await fetch(`/api/dashboard/${encodedCode}`);
+      const response = await fetch(`/api/dashboard/${encodedCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
       }
@@ -244,6 +257,10 @@ export default function DashboardPage({
     }
   };
 
+  // Find the current playlist object by PlaylistID
+  const currentPlaylist = playlists.find(p => String(p.id) === String(PlaylistID));
+  const isPlaylistSelected = !!currentPlaylist;
+
   return (
     <div className="dashboard-container bg-white dark:bg-gray-900">
       <nav className="navbar">
@@ -251,12 +268,26 @@ export default function DashboardPage({
           <h1 className="logo text-4xl">Groupify</h1>
         </div>
         <div className="navbar-center">
+<<<<<<< HEAD
           {PlaylistID.length > 0 && (
           <SearchBar 
             UserID={UserID} 
             playlistID={PlaylistID} 
             onTrackAdded={refreshHotTracks}
           />
+=======
+          {isPlaylistSelected ? (
+            <SearchBar
+              UserID={UserID}
+              playlistID={PlaylistID}
+              onTrackAdded={refreshHotTracks}
+              playlistName={currentPlaylist?.name || ''}
+              playlistDescription={currentPlaylist?.description || ''}
+              playlistIsPublic={currentPlaylist?.isPublic ?? false}
+            />
+          ) : (
+            <div className="text-red-500 mt-4">Please select or join a playlist to add tracks.</div>
+>>>>>>> 994c504362e64e7fb7d8b73fed85b4604b5772fd
           )}
         </div>
         <div className="navbar-right flex items-center justify-center">

@@ -19,26 +19,31 @@ export default function LoginForm({ setShowLogin, username, setUsername, setPass
   const dispatch = useDispatch()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
 
     try {
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ type: 'login', username, password })
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
-        dispatch(setUser(data.user))
-        router.push('/')
+        dispatch(setUser(data.user));
+        if (data.needsSpotifyAuth) {
+          window.location.href = '/authorise'; // <-- Redirect to Spotify OAuth
+        } else {
+          window.location.href = '/dashboard';
+        }
       } else {
-        setError(data.error || 'Login failed')
+        setError(data.error || 'Login failed');
       }
     } catch (err) {
-      setError('An error occurred during login')
+      setError('An error occurred during login');
     }
   }
 
@@ -93,4 +98,4 @@ export default function LoginForm({ setShowLogin, username, setUsername, setPass
       </div>
     </div>
   )
-} 
+}
