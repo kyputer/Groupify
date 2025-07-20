@@ -21,30 +21,28 @@ export const partySlice = createSlice({
   name: 'party',
   initialState,
   reducers: {
-    setPartyCodeOwner: (state, action: PayloadAction<string>) => {
+    setPartyCodeOwner: (state, action) => {
       state.selectedPartyCode = action.payload;
       state.isOwner = true;
       state.isJoined = true;
       state.timestamp = Date.now();
+      state.playlistID = action.payload.playlistID;
     },
-    setPartyCode: (state, action: PayloadAction<string>) => {
-      state.selectedPartyCode = action.payload;
+    setPartyCode: (state, action) => {
+      state.selectedPartyCode = action.payload.code;
       state.isJoined = true;
       state.timestamp = Date.now();
-    },
-    setPlaylistID: (state, action: PayloadAction<string>) => {
-      state.playlistID = action.payload;
+      state.playlistID = action.payload.playlistID;
     },
     selectPartyCode: (state, action) => {
       state.selectedPartyCode = action.payload.code;
       state.isOwner = action.payload.isOwner;
       state.isJoined = true;
       state.timestamp = Date.now();
+      state.playlistID = action.payload.playlistID;
     },
-    clearPartyCode: (state) => {
-      state.selectedPartyCode = '';
-      state.isJoined = false;
-      state.timestamp = null;
+    clearPartyCode: () => {
+      return initialState;
     },
     clearAllPartyCode: () => {
       return initialState;
@@ -55,5 +53,5 @@ export const partySlice = createSlice({
   },
 });
 
-export const { setPartyCodeOwner, setPartyCode, setPlaylistID, selectPartyCode, clearPartyCode, clearAllPartyCode } = partySlice.actions;
+export const { setPartyCodeOwner, setPartyCode, selectPartyCode, clearPartyCode, clearAllPartyCode } = partySlice.actions;
 export default partySlice.reducer; 

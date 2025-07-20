@@ -178,6 +178,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
           created_by INT NOT NULL,
           is_public BOOLEAN DEFAULT TRUE,
           description TEXT DEFAULT NULL,
+          open BOOLEAN DEFAULT TRUE,
           FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
         )
       `);

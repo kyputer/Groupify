@@ -9,7 +9,9 @@ const playlists = {
   getPlaylistID,
   joinPlaylist,
   leavePlaylist,
-  joinPlaylistWithID
+  joinPlaylistWithID,
+  closePlaylist,
+  checkPlaylistOwner
 }
 
 export async function createPlaylist(
@@ -68,6 +70,7 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
     const rows = await conn.query(`
       SELECT * FROM playlists 
       WHERE is_public = 1 
+      AND open = 1
       ORDER BY created_at DESC`);
     
     return rows.map((row: any) => ({
@@ -93,6 +96,7 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
       LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
       WHERE playlist_users.UserID = ?
       AND playlist_users.Joined = 1
+      AND playlists.open = 1
       ORDER BY playlists.created_at DESC`, [userID]);
     return rows.map((row: any) => ({
       id: row.PlaylistID,
@@ -139,6 +143,12 @@ export async function joinPlaylist(code: string, userID: string): Promise<number
     const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
     if (codeCheck.length === 0) {
       throw new Error(`Playlist with code ${code} does not exist.`);
+    }
+
+    // Check if the playlist is open
+    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [codeCheck[0].PlaylistID]);
+    if (openCheck[0].open === 0) {
+      throw new Error(`Playlist with code ${code} is not open.`);
     }
 
     // Check if the user is already in the playlist
@@ -204,6 +214,13 @@ export async function joinPlaylistWithID(playlistID: string, userID: string): Pr
     if (codeCheck.length === 0) {
       throw new Error(`Playlist with code ${playlistID} does not exist.`);
     }
+
+    // Check if the playlist is open
+    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (openCheck[0].open === 0) {
+      throw new Error(`Playlist with code ${playlistID} is not open.`);
+    }
+
     console.log('Playlist exists');
     // Check if the user is already in the playlist
     const joinCheck = await conn.query('SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?', [userID, playlistID]);
@@ -217,6 +234,61 @@ export async function joinPlaylistWithID(playlistID: string, userID: string): Pr
       `INSERT INTO playlist_users (PlaylistID, UserID)
       VALUES (?, ?)`, [playlistID, userID])
     return codeCheck[0].code;
+  } catch (error) {
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function closePlaylist(playlistID: string, userID: string): Promise<void>{
+  const conn = await getDBConnection();
+  try {
+    // Check if the playlist exists
+    const codeCheck = await conn.query('SELECT code FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (codeCheck.length === 0) {
+      throw new Error(`Playlist with code ${playlistID} does not exist.`);
+    }
+
+    // Check if the playlist is open
+    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (openCheck[0].open === 0) {
+      throw new Error(`Playlist with code ${playlistID} is not open.`);
+    }
+
+    // Check if the playlist is owned by the user
+    const ownerCheck = await conn.query('SELECT created_by FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (ownerCheck[0].created_by != userID) {
+      console.log(`Playlist with code ${playlistID} is not owned by the user ${userID}`);
+      console.log(ownerCheck[0].created_by);
+      
+      throw new Error(`Playlist with code ${playlistID} is not owned by the user.`);
+    }
+
+    await conn.query('UPDATE playlists SET open = 0 WHERE PlaylistID = ?', [playlistID]);
+  } catch (error) {
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function checkPlaylistOwner(playlistID: string, userID: string): Promise<boolean>{
+  const conn = await getDBConnection();
+  try {
+    // Check if the playlist exists
+    const playlistCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (playlistCheck.length === 0) {
+      throw new Error(`Playlist with code ${playlistID} does not exist.`);
+    }
+    // Check if the playlist is open
+    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (openCheck[0].open === 0) {
+      throw new Error(`Playlist with code ${playlistID} is not open.`);
+    }
+    // Check if the playlist is owned by the user
+    const ownerCheck = await conn.query('SELECT created_by FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    return ownerCheck[0].created_by === userID;
   } catch (error) {
     throw error;
   } finally {

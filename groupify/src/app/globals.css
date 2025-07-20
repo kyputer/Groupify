@@ -945,7 +945,6 @@ body {
 
 /* Join Party Page Styles */
 .join-party-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1036,6 +1035,10 @@ body {
 
 /* Mobile-specific styles for join party */
 @media (max-width: 768px) {
+  .first-panel {
+    padding-top: 5rem;
+  }
+
   .join-party-container {
     padding: 1rem;
     justify-content: flex-start;
@@ -1063,8 +1066,8 @@ body {
   }
 
   .code-input {
-    width: 2.75rem;
-    height: 3.25rem;
+    width: 2.5rem;
+    height: 3rem;
     font-size: 1.25rem;
     border-radius: 10px;
   }

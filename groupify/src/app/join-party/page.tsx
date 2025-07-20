@@ -2,9 +2,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
-import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
+import { setPartyCode } from '@/lib/features/partySlice';
 
-export default function Page() {
+interface PageProps {
+    setTabIndex: (index: number) => void;
+}
+
+export default function Page({setTabIndex}: PageProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [party, setParty] = useState(['', '', '', '', '', '', '', '']);
@@ -41,10 +45,9 @@ export default function Page() {
             const result = await response.json();
 
             if (result.success) {
-                dispatch(setPartyCode(result.partyCode));
-                dispatch(setPlaylistID(playlistId));
+                dispatch(setPartyCode({code: result.partyCode, playlistID: playlistId}));
                 setError('');
-                router.push(`/dashboard?code=${result.partyCode}`);
+                setTabIndex(0);
             } else {
                 setError(result.error);
             }
@@ -76,10 +79,12 @@ export default function Page() {
         const result = await response.json();
 
         if (result.success) {
-            dispatch(setPartyCode(code));
-            dispatch(setPlaylistID(result.playlistID));
+            dispatch(setPartyCode({code: code, playlistID: result.playlistID.toString()}));
+            console.log('Party code set:', code);
+            console.log('Playlist ID set:', result.playlistID);
             setError('');
-            router.push(`/dashboard?code=${code}`);
+            setParty(['', '', '', '', '', '', '', '']);
+            setTabIndex(0);
         } else {
             setError(result.error);
         }

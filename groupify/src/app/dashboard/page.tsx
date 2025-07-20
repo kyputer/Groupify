@@ -6,13 +6,14 @@ import { RootState } from '@/lib/store';
 import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 import { useSearchParams } from 'next/navigation';
-import { setPartyCode, setPlaylistID } from '@/lib/features/partySlice';
+import { setPartyCode, setPartyCodeOwner } from '@/lib/features/partySlice';
 
 export default function Page() {
   const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
   const playlistID = useSelector((state: RootState) => state.party.playlistID ?? '');
   const partyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
+  const isOwner = useSelector((state: RootState) => state.party.isOwner);
   const searchParams = useSearchParams();
   const [data, setData] = useState<{
     PlayedJson: Song[];
@@ -20,10 +21,21 @@ export default function Page() {
     HotVotes: Vote[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const handlePartyJoin = async (newPartyCode: string, newPlaylistId: string) => {
-    dispatch(setPartyCode(newPartyCode));
-    dispatch(setPlaylistID(newPlaylistId));
+    const isOwner = await fetch(`/api/playlist-owner`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ Code: newPartyCode }),
+      credentials: 'include'
+    });
+    const ownerResponse = await isOwner.json();
+    if (ownerResponse.isOwner) {
+      dispatch(setPartyCodeOwner({code: newPartyCode, playlistID: newPlaylistId}));
+    } else {
+      dispatch(setPartyCode({code: newPartyCode, playlistID: newPlaylistId}));
+    }
   };
 
   useEffect(() => {
@@ -91,6 +103,7 @@ export default function Page() {
         PartyCode={searchParams?.get('code') || partyCode || ''}
         PlaylistID={playlistID}
         onPartyJoin={handlePartyJoin}
+        isOwner={isOwner}
       />
     </div>
   );

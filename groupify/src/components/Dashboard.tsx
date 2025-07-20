@@ -11,7 +11,8 @@ import SongCard from './SongCard';
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs"
 import "react-tabs/style/react-tabs.css"
 import { RainbowButton } from './RainbowButton';
-
+import { ClosePartyButton } from './CloseParty';
+import Page from '@/app/join-party/page';  
 interface DashboardProps {
   PlayedJson: Song[];
   HotJson: Song[];
@@ -19,6 +20,7 @@ interface DashboardProps {
   UserID: string;
   PartyCode: string;
   PlaylistID: string;
+  isOwner: boolean;
   onPartyJoin?: (partyCode: string, playlistId: string) => void;
 }
 
@@ -29,16 +31,19 @@ export default function DashboardPage({
   UserID,
   PartyCode,
   PlaylistID,
-  onPartyJoin
+  onPartyJoin,
+  isOwner
 }: DashboardProps) {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [hotTracks, setHotTracks] = useState<Song[]>(HotJson);
   const [hotVotes, setHotVotes] = useState<Vote[]>(HotVotes);
   const [playedTracks, setPlayedTracks] = useState<Song[]>(PlayedJson);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState(false);
   const authChecked = useRef(false);
   const router = useRouter();
 
+  console.log(isOwner);
   const checkAuthentication = useCallback(async () => {
     if (authChecked.current) return;
     
@@ -97,6 +102,17 @@ export default function DashboardPage({
       fetchPlaylists();
     }
   }, [isAuthenticated, fetchPlaylists]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const refreshHotTracks = async () => {
     try {
@@ -235,23 +251,52 @@ export default function DashboardPage({
           <h1 className="logo text-4xl">Groupify</h1>
         </div>
         <div className="navbar-center">
+          {PlaylistID.length > 0 && (
           <SearchBar 
             UserID={UserID} 
             playlistID={PlaylistID} 
             onTrackAdded={refreshHotTracks}
           />
+          )}
         </div>
-        <div className="navbar-right flex flex-col items-center justify-center">
+        <div className="navbar-right flex items-center justify-center">
+          {isOwner && (
+            <ClosePartyButton PlaylistId={PlaylistID} />
+          )}
           <LogOutButton/>
         </div>
       </nav>
-      <Tabs className='mt-24'>
-        <TabList>
-          <Tab style={{minWidth:"50%"}} className='text-white font-bold text-xl text-center'>Dashboard</Tab>
-          <Tab style={{minWidth:"50%"}} className='text-white font-bold text-xl text-center'>Playlists</Tab>
+      <Tabs className={`${isMobile ? 'mt-24 relative pb-20' : 'mt-24'}`}>
+        <TabList className={`${isMobile ? 'fixed bottom-0 left-0 right-0 bg-gray-900 z-[1000] flex justify-center items-center border-t border-gray-700' : 'flex justify-center items-center border-b border-gray-700'}`}>
+          <Tab style={{minWidth:"33%"}} className={`text-white font-bold text-xl text-center py-4 hover:bg-gray-800 transition-colors flex flex-col items-center gap-1 ${isMobile ? '' : 'px-8'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span className="text-xs">Dashboard</span>
+          </Tab>
+          <Tab style={{minWidth:"33%"}} className={`text-white font-bold text-xl text-center py-4 hover:bg-gray-800 transition-colors flex flex-col items-center gap-1 ${isMobile ? '' : 'px-8'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3h18v18H3z"></path>
+              <path d="M3 9h18"></path>
+              <path d="M9 21V9"></path>
+            </svg>
+            <span className="text-xs">Playlists</span>
+          </Tab>
+          <Tab style={{minWidth:"33%"}} className={`text-white font-bold text-xl text-center py-4 hover:bg-gray-800 transition-colors flex flex-col items-center gap-1 ${isMobile ? '' : 'px-8'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span className="text-xs">Join Party</span>
+          </Tab>
         </TabList>
-        <TabPanel>
-          <div className="dashboard-content">
+        <TabPanel className={isMobile ? 'pb-16' : ''}>
+          <div className="dashboard-content first-panel">
             <h2 className="section-title">Now Playing</h2>
             <div className="playlist-section overflow-auto">
               <div className="playlist-container overflow-y-scroll">
@@ -275,7 +320,7 @@ export default function DashboardPage({
 
             <h2 className="section-title">Hot Tracks</h2>
             <div className="playlist-section overflow-auto">
-              <div className="playlist-container !overflow-y-scroll max-h-[500px]">
+              <div className="playlist-container !overflow-y-scroll">
                 {hotTracks.length > 0 ? (
                   <div className="hot-tracks-list">
                     {hotTracks.map((song) => {
@@ -328,7 +373,7 @@ export default function DashboardPage({
             </div>
           </div>
         </TabPanel>
-        <TabPanel>
+        <TabPanel className={isMobile ? 'pb-16' : ''}>
           <div className="dashboard-content">
         {PartyCode && (
         <div className='party-code-container flex items-center gap-4 mb-8'>
@@ -341,7 +386,7 @@ export default function DashboardPage({
 
         <h2 className="section-title">Playlists</h2>  
         <div className="playlist-section overflow-auto pt-24">
-          <div className="playlist-container !overflow-y-scroll h-[500px]">
+          <div className="playlist-container !overflow-y-scroll max-h-[500px]">
             {playlists.length > 0 ? (
               <>
                 {playlists.map((playlist) => (
@@ -387,12 +432,17 @@ export default function DashboardPage({
             )}
           </div>
           <div className='text-gray-500 text-center pt-10 flex flex-col items-center gap-4'>
-              Have a party code? Join a playlist!
-              <RainbowButton href='/join-party' text='Join the party' className='mt-4'/>
-            </div>
+              Want to start a party?
+              <RainbowButton href='/generate-party' text='Start a party!' className='mt-4'/>
+            </div>  
 
         </div>
       </div>
+        </TabPanel>
+        <TabPanel className={isMobile ? 'pb-16' : ''}>
+            <div className='dashboard-content'>
+              <Page />
+            </div>
         </TabPanel>
       </Tabs>
       

@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
         }
         const sanitizedName = sanitizeInput(Name);
         const sanitizedDescription = sanitizeInput(Description);
-        const code = generateCode();
-        const playlistID = await playlists.createPlaylist(sanitizedName, session, isPublic, code, sanitizedDescription);
-        await playlists.joinPlaylist(code, session);
+        
+        const playlistID = await playlists.createPlaylist(sanitizedName, session, isPublic, sanitizedDescription);
+        await playlists.joinPlaylist(playlistID.code, session);
         return NextResponse.json({
             success: true,
-            code: code,
+            code: playlistID.code,
             playlistID: playlistID,
             message: "Party code generated successfully"
         });

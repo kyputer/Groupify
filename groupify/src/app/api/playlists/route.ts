@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const playlist = await createPlaylist(name, userId, isPublic, code, description);
+    const playlist = await createPlaylist(name, userId, isPublic, description);
     return NextResponse.json(playlist); // BigInt values are already converted to strings
   } catch (error) {
     console.error('Error creating playlist:', error);

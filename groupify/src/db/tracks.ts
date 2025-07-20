@@ -24,7 +24,17 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
     conn = await getDBConnection();
     console.log('Database connection established');
 
-    const trackRows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
+
+    const trackRows = await conn.query(`
+      SELECT tracks.id 
+      FROM tracks 
+      LEFT JOIN playlist_tracks 
+      ON tracks.id = playlist_tracks.TrackID 
+      WHERE tracks.SpotifyID=? 
+      AND tracks.user_id=? 
+      AND playlist_tracks.PlaylistID=?;
+      `, [track.id, userID, playlistID]);
+    
     let trackID: number;
     if (trackRows.length === 0) {
       const result = await conn.query(
@@ -36,14 +46,6 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
     } else {
       trackID = trackRows[0].id;
     }
-
-
-    console.log('Upvote: Adding track to playlist:', trackID, playlistID);
-    // Is this even needed? A track will not be upvoted if it is not in the playlist already
-    await conn.query(
-      'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
-      [playlistID, trackID]
-    );
 
     const voteRows = await conn.query(
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
