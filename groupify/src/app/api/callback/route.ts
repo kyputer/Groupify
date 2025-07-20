@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { saveSpotifyTokensForUser } from '@/lib/spotifyTokens';
 import SpotifyWebApi from 'spotify-web-api-node';
 import dotenv from 'dotenv';
 
@@ -15,45 +16,45 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
 
-  if (!code || !state) {
-    return NextResponse.json({ error: 'Missing code or state' }, { status: 400 });
+  // Get cookies from request
+  const cookies = request.headers.get('cookie');
+  console.log('Callback cookies:', cookies); // Add this line
+
+  let userId: string | null = null;
+  let storedState: string | null = null;
+  if (cookies) {
+    const userCookie = cookies.split(';').map(c => c.trim()).find(c => c.startsWith('spotifyAuthUser='));
+    userId = userCookie ? userCookie.split('=')[1] : null;
+    const stateCookie = cookies.split(';').map(c => c.trim()).find(c => c.startsWith('spotifyAuthState='));
+    storedState = stateCookie ? stateCookie.split('=')[1] : null;
+  }
+
+  if (!code || !state || !userId || !storedState) {
+    return NextResponse.json({ error: 'Missing code, state, or userId' }, { status: 400 });
+  }
+
+  console.log('Callback query state:', state);
+  console.log('Callback cookie state:', storedState);
+
+  if (state !== storedState) {
+    console.error('State mismatch during Spotify callback');
+    return NextResponse.json({ error: 'State mismatch' }, { status: 400 });
   }
 
   try {
-    console.log('Received state:', state); // Debugging
-    // Simulate session state validation (replace with actual session logic)
-    const storedState = state; // Replace with session-stored state
-    if (state !== storedState) {
-      console.error('State mismatch during Spotify callback');
-      return NextResponse.json({ error: 'State mismatch' }, { status: 400 });
-    }
-
     const data = await spotifyApi.authorizationCodeGrant(code);
-
-    // Extract access and refresh tokens
     const accessToken = data.body['access_token'];
     const refreshToken = data.body['refresh_token'];
     const expiresIn = data.body['expires_in'];
 
-    console.log('Access Token:', accessToken);
-    console.log('Refresh Token:', refreshToken);
-    console.log('Expires In:', expiresIn);
+    // Save tokens for the user
+    await saveSpotifyTokensForUser(userId, accessToken, refreshToken, expiresIn);
 
-    // Set tokens on the Spotify API instance
     spotifyApi.setAccessToken(accessToken);
     spotifyApi.setRefreshToken(refreshToken);
 
-    // Simulate storing tokens in a session or database
-    const session = {
-      spotifyAccessToken: accessToken,
-      spotifyRefreshToken: refreshToken,
-      spotifyAccessTokenExpiresAt: Date.now() + expiresIn * 1000,
-    };
-    console.log('Session updated:', session);
-
-    const origin = new URL(request.url).origin; // Get the origin from the request URL
-    // TODO: Change the reroute to the main app page instead of dashboard. Code insertion DB error.
-    return NextResponse.redirect(`${origin}/dashboard`); // Redirect to the absolute URL of the dashboard
+    const origin = url.origin;
+    return NextResponse.redirect(`${origin}/dashboard`);
   } catch (err) {
     console.error('Error during authorization code grant:', err);
     return NextResponse.json({ error: 'Authorization failed' }, { status: 500 });

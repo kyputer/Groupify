@@ -36,6 +36,8 @@ export async function registerUser(username: string, password: string) {
   }
 }
 
+
+
 export async function findUserById(userId: number): Promise<any | null> {
   if (!userId || isNaN(userId)) {
     console.error('Invalid userId:', userId);

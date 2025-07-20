@@ -6,10 +6,20 @@ import { formatDuration } from '@/lib/utils';
 interface SearchBarProps {
   UserID: string;
   playlistID: string;
+  playlistName: string;
+  playlistDescription: string;
+  playlistIsPublic: boolean;
   onTrackAdded?: () => Promise<void>;
 }
 
-const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
+const SearchBar = ({
+  UserID,
+  playlistID,
+  playlistName,
+  playlistDescription,
+  playlistIsPublic,
+  onTrackAdded
+}: SearchBarProps) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,17 +97,20 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
     console.log("Selected song: ", song);
     try {
       const response = await fetch('/api/playlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Track: song, PlaylistID: playlistID }),
-      credentials: 'include'
-    });
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          TrackID: song.id,           // <-- Only send the track ID
+          PlaylistID: playlistID,
+          UserID: UserID              // If your backend expects this
+        }),
+        credentials: 'include'
+      });
 
       if (!response.ok) {
         throw new Error('Failed to add track to playlist');
       }
 
-      // Call the onTrackAdded callback if provided
       if (onTrackAdded) {
         await onTrackAdded();
       }
@@ -112,24 +125,35 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
   };
 
   const handleTrackSelect = async (track: SpotifyTrack) => {
+    if (!playlistID || !playlistName || !playlistDescription) {
+      setError('Please select a playlist before adding tracks.');
+      return;
+    }
+
     setQuery('');
     setSuggestions([]);
     setShowSuggestions(false);
     setError(null);
 
-    console.log("Selected song: ", track);
+    // Use props directly
     try {
       const response = await fetch('/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Track: track, PlaylistID: playlistID, UserID: UserID }),
+        body: JSON.stringify({
+          playlistCode: playlistID,
+          trackId: track.id,
+          name: playlistName,
+          description: playlistDescription,
+          isPublic: playlistIsPublic
+        }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
         throw new Error('Failed to add track to playlist');
       }
 
-      // Call the onTrackAdded callback if provided
       if (onTrackAdded) {
         await onTrackAdded();
       }
@@ -185,7 +209,7 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
               <div
                 key={song.id}
                 className="search-result-item"
-                onClick={() => handleSelect(song)}
+                onClick={() => handleTrackSelect(song)} // <-- FIXED
               >
                 <img 
                   src={song.album.images[0]?.url || '/default-album.png'} 
@@ -215,4 +239,4 @@ const SearchBar = ({ UserID, playlistID, onTrackAdded }: SearchBarProps) => {
   );
 };
 
-export default SearchBar; 
+export default SearchBar;

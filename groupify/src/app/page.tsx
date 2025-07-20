@@ -28,7 +28,13 @@ export default function HomePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/check');
+        const response = await fetch('/api/auth/check', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Include cookies for session management
+        });
         const data = await response.json();
         
         if (!response.ok || !data.authenticated) {
@@ -48,7 +54,13 @@ export default function HomePage() {
 
     const fetchPlaylists = async () => {
       try {
-        const response = await fetch('/api/playlists');
+        const response = await fetch('/api/playlists', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Include cookies for session management
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch playlists');
         }
@@ -81,6 +93,10 @@ export default function HomePage() {
     try {
       const response = await fetch('/api/reset', {
         method: 'POST',
+        credentials: 'include', // Include cookies for session management
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {

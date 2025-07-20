@@ -1,6 +1,8 @@
 import { getDBConnection } from '@/lib/db';
 import { Playlist } from '@/interfaces/Playlist';
 import { createSpotifyPlaylist } from '@/lib/spotify';
+import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
+import { getTrackDetails } from '@/lib/spotify'; 
 
 const playlists = {
   createPlaylist,
@@ -10,8 +12,9 @@ const playlists = {
   joinPlaylist,
   leavePlaylist,
   joinPlaylistWithID,
-  closePlaylist,
-  checkPlaylistOwner
+  findPlaylistByCodeOrId,
+  ensurePlaylistExists,
+  addTrackToPlaylist
 }
 
 export async function createPlaylist(
@@ -34,11 +37,18 @@ export async function createPlaylist(
     if (codeCheck.length > 0) {
       throw new Error(`Code ${code} is already in use.`);
     }
-    
-    // TODO: Spotify playlist creation and then link data
-    const splaylistres = createSpotifyPlaylist(name, createdBy, isPublic, description);
-    console.log('Spotify playlist creation response:', splaylistres);
-    //
+
+    // Check for Spotify token
+    const { accessToken } = await getSpotifyTokensForUser(Number(createdBy));
+    let splaylistres = null;
+    if (accessToken) {
+      // Only create Spotify playlist if user has a token
+      splaylistres = await createSpotifyPlaylist(name, description, isPublic, createdBy);
+      console.log('Spotify playlist creation response:', splaylistres);
+    } else {
+      console.log('User does not have a Spotify token, skipping Spotify playlist creation');
+    }
+
     console.log(`Creating playlist with code: ${code} and name: ${name} and description: ${description}`);
     const result = await conn.query(
       `INSERT INTO playlists (name, code, created_at, created_by, is_public, description)
@@ -241,56 +251,96 @@ export async function joinPlaylistWithID(playlistID: string, userID: string): Pr
   }
 }
 
-export async function closePlaylist(playlistID: string, userID: string): Promise<void>{
+export async function findPlaylistByCodeOrId(codeOrId: string | number): Promise<Playlist | null> {
   const conn = await getDBConnection();
   try {
-    // Check if the playlist exists
-    const codeCheck = await conn.query('SELECT code FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    if (codeCheck.length === 0) {
-      throw new Error(`Playlist with code ${playlistID} does not exist.`);
-    }
-
-    // Check if the playlist is open
-    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    if (openCheck[0].open === 0) {
-      throw new Error(`Playlist with code ${playlistID} is not open.`);
-    }
-
-    // Check if the playlist is owned by the user
-    const ownerCheck = await conn.query('SELECT created_by FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    if (ownerCheck[0].created_by != userID) {
-      console.log(`Playlist with code ${playlistID} is not owned by the user ${userID}`);
-      console.log(ownerCheck[0].created_by);
-      
-      throw new Error(`Playlist with code ${playlistID} is not owned by the user.`);
-    }
-
-    await conn.query('UPDATE playlists SET open = 0 WHERE PlaylistID = ?', [playlistID]);
-  } catch (error) {
-    throw error;
+    const rows = await conn.query(
+      'SELECT * FROM playlists WHERE code = ? OR PlaylistID = ? LIMIT 1',
+      [codeOrId, codeOrId]
+    );
+    if (rows.length === 0) return null;
+    const row = rows[0];
+    return {
+      id: row.PlaylistID.toString(),
+      name: row.name,
+      code: row.code,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      isPublic: row.is_public === 1,
+      description: row.description,
+      isJoined: false
+    };
   } finally {
     conn.release();
   }
 }
 
-export async function checkPlaylistOwner(playlistID: string, userID: string): Promise<boolean>{
+export async function ensurePlaylistExists({
+  name,
+  createdBy,
+  isPublic,
+  code,
+  description
+}: {
+  name: string,
+  createdBy: string,
+  isPublic: boolean,
+  code: string,
+  description: string
+}): Promise<Playlist> {
+  let playlist = await findPlaylistByCodeOrId(code);
+  if (!playlist) {
+    playlist = await createPlaylist(name, createdBy, isPublic, code, description);
+  }
+  return playlist;
+}
+
+export async function addTrackToPlaylist({
+  playlistCode,
+  trackId,
+  name,
+  createdBy,
+  isPublic,
+  description
+}: {
+  playlistCode: string,
+  trackId: string,
+  name: string,
+  createdBy: string,
+  isPublic: boolean,
+  description: string
+}): Promise<{ success: boolean, playlist: Playlist }> {
+  // Ensure playlist exists
+  const playlist = await ensurePlaylistExists({ name, createdBy, isPublic, code: playlistCode, description });
   const conn = await getDBConnection();
   try {
-    // Check if the playlist exists
-    const playlistCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    if (playlistCheck.length === 0) {
-      throw new Error(`Playlist with code ${playlistID} does not exist.`);
+    // 1. Ensure track exists in tracks table
+    const [existingTrack] = await conn.query('SELECT * FROM tracks WHERE SpotifyID = ?', [trackId]);
+    if (!existingTrack) {
+      // Fetch from Spotify
+      const track = await getTrackDetails(trackId);
+      if (!track) throw new Error('Track not found on Spotify');
+      await conn.query(
+        `INSERT INTO tracks (SpotifyID, title, artist, url, image, duration_ms, explicit)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          track.id,
+          track.name,
+          track.artists.map(a => a.name).join(', '),
+          track.external_urls.spotify,
+          track.album.images[0]?.url || '',
+          track.duration_ms,
+          track.explicit
+        ]
+      );
     }
-    // Check if the playlist is open
-    const openCheck = await conn.query('SELECT open FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    if (openCheck[0].open === 0) {
-      throw new Error(`Playlist with code ${playlistID} is not open.`);
-    }
-    // Check if the playlist is owned by the user
-    const ownerCheck = await conn.query('SELECT created_by FROM playlists WHERE PlaylistID = ?', [playlistID]);
-    return ownerCheck[0].created_by === userID;
-  } catch (error) {
-    throw error;
+
+    // 2. Now insert into playlist_tracks
+    await conn.query(
+      'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
+      [playlist.id, trackId]
+    );
+    return { success: true, playlist };
   } finally {
     conn.release();
   }

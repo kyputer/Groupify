@@ -1,5 +1,6 @@
 import SpotifyWebApi from 'spotify-web-api-node';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
+import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
 
 let accessToken: string | null = null;
 let tokenExpirationTime: number = 0;
@@ -105,28 +106,23 @@ export async function createSpotifyPlaylist(
   name: string,
   description: string,
   isPublic: boolean,
-  spotify_user_id: string
+  userId: string // <-- your local user ID
 ): Promise<any> {
-  if (!await ensureValidToken()) {
-    throw new Error('Failed to initialize Spotify API');
+  // Get the user's Spotify tokens from DB
+  const { accessToken } = await getSpotifyTokensForUser(Number(userId));
+  if (!accessToken) {
+    throw new Error('No Spotify access token available for user');
   }
 
-  const access_token = spotifyApi.getAccessToken();
-  if (!access_token) {
-    throw new Error('No access token available');
-  }
+  // Set the user's access token on the API instance
+  spotifyApi.setAccessToken(accessToken);
 
   try {
-    // Ensure the user-specific token is set
-    // const userAccessToken = await spotifyApi.getAccessToken(); // Implement this function to fetch the user's token
-    // spotifyApi.setAccessToken(userAccessToken);
-
     const response = await spotifyApi.createPlaylist(name, {
       description,
       public: isPublic,
     });
-
-    return response.body; // Return the created playlist details
+    return response.body;
   } catch (error) {
     console.error('Error creating Spotify playlist:', error);
     throw error;
@@ -174,7 +170,8 @@ export async function refreshUserAccessToken(): Promise<void> {
     tokenExpirationTime = Date.now() + data.body['expires_in'] * 1000;
     spotifyApi.setAccessToken(accessToken);
   } catch (error) {
-    console.error('Error refreshing user access token:', error);
+    console.error('Error refreshing user access token:', JSON.stringify(error));
+    console.log('MY BUTT');
     throw error;
   }
 }

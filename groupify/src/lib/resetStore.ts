@@ -21,7 +21,7 @@ export async function resetStore() {
     store.dispatch(clearAllPartyCode());
 
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/';
   } catch (error) {
     console.error('Error resetting store:', error);
     throw error;
