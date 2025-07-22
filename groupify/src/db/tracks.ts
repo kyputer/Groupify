@@ -24,17 +24,17 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
     conn = await getDBConnection();
     console.log('Database connection established');
 
-
+    console.log('track.id: ', track.id, 'title: ', track.name, 'artist: ', track.artists[0].name, 'url: ', track.href, 'userID: ', userID, 'playlistID: ', playlistID);
     const trackRows = await conn.query(`
       SELECT tracks.id 
       FROM tracks 
       LEFT JOIN playlist_tracks 
-      ON tracks.id = playlist_tracks.TrackID 
+      ON tracks.SpotifyID = playlist_tracks.TrackID 
       WHERE tracks.SpotifyID=? 
       AND tracks.user_id=? 
       AND playlist_tracks.PlaylistID=?;
       `, [track.id, userID, playlistID]);
-    
+    console.log('trackRows: ', trackRows);
     let trackID: number;
     if (trackRows.length === 0) {
       const result = await conn.query(
@@ -49,7 +49,7 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
 
     const voteRows = await conn.query(
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-      [trackID, userID, playlistID]
+      [track.id, userID, playlistID]
     );
     
     let voteType = 'upvote';
@@ -59,7 +59,7 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
         // If already upvoted, remove the vote (neutral)
         await conn.query(
           `UPDATE votes SET VoteType='neutral' WHERE TrackID=? AND UserID=? AND PlaylistID=?;`,
-          [trackID, userID, playlistID]
+          [track.id, userID, playlistID]
         );
         await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
         voteType = 'neutral';
@@ -68,7 +68,7 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
         // If downvoted, change to upvote
         await conn.query(
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-          ['upvote', trackID, userID, playlistID]
+          ['upvote', track.id, userID, playlistID]
         );
         await conn.query('UPDATE tracks SET votes=votes+2 WHERE id=?;', [trackID]);
         console.log('Vote changed from downvote to upvote');
@@ -76,14 +76,14 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
         // If neutral, change to upvote
         await conn.query(
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-          ['upvote', trackID, userID, playlistID]
+          ['upvote', track.id, userID, playlistID]
         );
       }
     } else {
       // New upvote
       await conn.query(
         'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
-        [trackID, userID, 'upvote', playlistID]
+        [track.id, userID, 'upvote', playlistID]
       );
       await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
       console.log('New upvote added');
@@ -125,7 +125,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
     // Check existing vote
     const voteRows = await conn.query(
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-      [trackID, userID, playlistID]
+      [track.id, userID, playlistID]
     );
     
     let voteType = 'downvote';
@@ -136,7 +136,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
         // If already downvoted, remove the vote (neutral)
         await conn.query(
           `UPDATE votes SET VoteType='neutral' WHERE TrackID=? AND UserID=? AND PlaylistID=?;`,
-          [trackID, userID, playlistID]
+          [track.id, userID, playlistID]
         );
         await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
         voteType = 'neutral';
@@ -145,7 +145,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
         // If upvoted, change to downvote
         await conn.query(
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-          ['downvote', trackID, userID, playlistID]
+          ['downvote', track.id, userID, playlistID]
         );
         await conn.query('UPDATE tracks SET votes=votes-2 WHERE id=?;', [trackID]);
         console.log('Vote changed from upvote to downvote');
@@ -153,7 +153,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
         // If neutral, change to downvote
         await conn.query(
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
-          ['downvote', trackID, userID, playlistID]
+          ['downvote', track.id, userID, playlistID]
         );
         
       }
@@ -161,7 +161,7 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
       // New downvote
       await conn.query(
         'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
-        [trackID, userID, 'downvote', playlistID]
+        [track.id, userID, 'downvote', playlistID]
       );
       await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
       console.log('New downvote added');
@@ -196,7 +196,7 @@ async function pushBlacklist(track: Track, playlistID: number): Promise<void> {
   try {
     conn = await getDBConnection();
     await conn.query(`UPDATE tracks SET blacklist = 1  
-      LEFT JOIN playlist_tracks ON tracks.id = playlist_tracks.TrackID 
+      LEFT JOIN playlist_tracks ON tracks.SpotifyID = playlist_tracks.TrackID 
       WHERE playlist_tracks.PlaylistID=?;`, 
       [playlistID]);
   } catch (err) {
@@ -267,10 +267,10 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
           ELSE 0 
         END), 0) as vote_count
       FROM tracks t 
-       INNER JOIN playlist_tracks pt ON pt.TrackID = t.id
+       INNER JOIN playlist_tracks pt ON pt.TrackID = t.SpotifyID
        INNER JOIN playlists p ON p.PlaylistID = pt.PlaylistID
-       LEFT JOIN votes v ON v.TrackID = t.id AND v.UserID = ? AND v.PlaylistID = ?
-       LEFT JOIN votes v2 ON v2.TrackID = t.id AND v2.PlaylistID = ?
+       LEFT JOIN votes v ON v.TrackID = t.SpotifyID AND v.UserID = ? AND v.PlaylistID = ?
+       LEFT JOIN votes v2 ON v2.TrackID = t.SpotifyID AND v2.PlaylistID = ?
       WHERE 
        p.PlaylistID = ?
        AND (t.queue_at IS NULL OR t.queued = 0)
@@ -391,7 +391,7 @@ async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTra
         t.explicit,
         t.queue_at
       FROM tracks t 
-       INNER JOIN playlist_tracks pt ON pt.TrackID = t.id
+       INNER JOIN playlist_tracks pt ON pt.TrackID = t.SpotifyID
        INNER JOIN playlists p ON p.PlaylistID = pt.PlaylistID
       WHERE 
        p.PlaylistID = ?
@@ -451,7 +451,7 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
     // First check if track already exists
     const trackRows = await conn.query(
       'SELECT t.id FROM tracks t ' +
-      'JOIN playlist_tracks pt ON t.id = pt.TrackID ' +
+      'JOIN playlist_tracks pt ON t.SpotifyID = pt.TrackID ' +
       'WHERE t.SpotifyID = ? AND pt.PlaylistID = ?;',
       [track.id, playlistID]
     );
@@ -477,11 +477,11 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
       console.log('New track inserted:', trackID);
 
           // Add track to playlist
-    await conn.query(
-      'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
-      [playlistID, trackID]
-    );
-    console.log(`Track ${trackID} added to playlist ${playlistID}`);
+      await conn.query(
+        'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
+        [playlistID, trackID]
+      );
+      console.log(`Track ${trackID} added to playlist ${playlistID}`);
     } else {
       trackID = trackRows[0].id;
       console.log('Existing track found:', trackID);
@@ -491,7 +491,8 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
         [trackID]
       );
     }
-
+    console.log("++++++++++++++++++++");
+    console.log('starting vote check');
     // Check if user has already voted on this track
     const voteRows = await conn.query(
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
@@ -499,6 +500,7 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
     );
 
     if (voteRows.length === 0) {
+      console.log('no vote found');
       // Add initial upvote for the user who added the track
       await conn.query(
         'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',

@@ -43,7 +43,6 @@ export default function DashboardPage({
   const authChecked = useRef(false);
   const router = useRouter();
 
-  console.log(isOwner);
   const checkAuthentication = useCallback(async () => {
     if (authChecked.current) return;
     

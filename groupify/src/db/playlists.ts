@@ -3,6 +3,7 @@ import { Playlist } from '@/interfaces/Playlist';
 import { createSpotifyPlaylist } from '@/lib/spotify';
 import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
 import { getTrackDetails } from '@/lib/spotify'; 
+import { generateCode } from '@/lib/utils';
 
 const playlists = {
   createPlaylist,
@@ -21,7 +22,6 @@ export async function createPlaylist(
   name: string,
   createdBy: string,
   isPublic: boolean,
-  code: string,
   description: string
 ): Promise<Playlist> {
   const conn = await getDBConnection();
@@ -30,12 +30,6 @@ export async function createPlaylist(
     const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [createdBy]);
     if (userCheck.length === 0) {
       throw new Error(`User with ID ${createdBy} does not exist.`);
-    }
-
-    // Check if the code is already in use
-    const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
-    if (codeCheck.length > 0) {
-      throw new Error(`Code ${code} is already in use.`);
     }
 
     // Check for Spotify token
@@ -47,6 +41,15 @@ export async function createPlaylist(
       console.log('Spotify playlist creation response:', splaylistres);
     } else {
       console.log('User does not have a Spotify token, skipping Spotify playlist creation');
+    }
+
+    let code = '';
+    while (true) {
+      code = generateCode();
+      const codeCheck = await conn.query('SELECT PlaylistID FROM playlists WHERE code = ?', [code]);
+      if (codeCheck.length === 0) {
+        break;
+      }
     }
 
     console.log(`Creating playlist with code: ${code} and name: ${name} and description: ${description}`);
@@ -290,7 +293,7 @@ export async function ensurePlaylistExists({
 }): Promise<Playlist> {
   let playlist = await findPlaylistByCodeOrId(code);
   if (!playlist) {
-    playlist = await createPlaylist(name, createdBy, isPublic, code, description);
+    playlist = await createPlaylist(name, createdBy, isPublic, description);
   }
   return playlist;
 }
@@ -314,32 +317,58 @@ export async function addTrackToPlaylist({
   const playlist = await ensurePlaylistExists({ name, createdBy, isPublic, code: playlistCode, description });
   const conn = await getDBConnection();
   try {
-    // 1. Ensure track exists in tracks table
-    const [existingTrack] = await conn.query('SELECT * FROM tracks WHERE SpotifyID = ?', [trackId]);
+    const track = await getTrackDetails(trackId);
+    if (!track) throw new Error('Track not found on Spotify');
+
+    // 1. Ensure track exists in tracks table 
+    const [existingTrack] = await conn.query(
+      'SELECT t.id FROM tracks t ' +
+      'JOIN playlist_tracks pt ON t.id = pt.TrackID ' +
+      'WHERE t.SpotifyID = ? AND pt.PlaylistID = ?;',
+      [trackId, playlist.id]
+    );
+    let GroupifyTrackID: number;
     if (!existingTrack) {
       // Fetch from Spotify
-      const track = await getTrackDetails(trackId);
-      if (!track) throw new Error('Track not found on Spotify');
-      await conn.query(
-        `INSERT INTO tracks (SpotifyID, title, artist, url, image, duration_ms, explicit)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      
+      const trackInsertResult = await conn.query(
+        `INSERT INTO tracks (SpotifyID, title, artist, url, image, user_id, votes, duration_ms, explicit)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           track.id,
           track.name,
           track.artists.map(a => a.name).join(', '),
           track.external_urls.spotify,
           track.album.images[0]?.url || '',
+          createdBy,
+          1,
           track.duration_ms,
           track.explicit
         ]
+      );
+      GroupifyTrackID = trackInsertResult.insertId;
+    } else {
+      GroupifyTrackID = existingTrack.id;
+      console.log('Existing track found:', GroupifyTrackID);
+      // Update the track's votes to += 1
+      await conn.query(
+        'UPDATE tracks SET votes = votes + 1 WHERE id = ?;',
+        [GroupifyTrackID]
       );
     }
 
     // 2. Now insert into playlist_tracks
     await conn.query(
       'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
-      [playlist.id, trackId]
+      [playlist.id, track.id]
     );
+
+    // 3. Add initial upvote for the user who added the track
+    await conn.query(
+      'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
+      [track.id, createdBy, 'upvote', playlist.id]
+    );
+
     return { success: true, playlist };
   } finally {
     conn.release();

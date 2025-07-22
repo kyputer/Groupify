@@ -22,7 +22,7 @@ export const partySlice = createSlice({
   initialState,
   reducers: {
     setPartyCodeOwner: (state, action) => {
-      state.selectedPartyCode = action.payload;
+      state.selectedPartyCode = action.payload.code;
       state.isOwner = true;
       state.isJoined = true;
       state.timestamp = Date.now();
