@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7 // 1 week
+        // domain: undefined // Don't set domain for dev/local 
       });
       
       console.log('Session cookie set for new user:', user.id);
