@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:11.3
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-groupify}
+      MYSQL_USER: ${MYSQL_USER:-groupify}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-groupify}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /usr/src/app/groupify
+    environment:
+      NODE_ENV: development
+      DB_HOST: db
+      DB_USER: ${DB_USER:-groupify}
+      DB_PASSWORD: ${DB_PASSWORD:-groupify}
+      DB_NAME: ${DB_NAME:-groupify}
+      NEXTAUTH_URL: http://localhost:3000
+      SESSION_SECRET: ${SESSION_SECRET:-changeme}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
