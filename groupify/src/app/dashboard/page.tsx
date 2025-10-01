@@ -22,12 +22,11 @@ export default function Page() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const handlePartyJoin = async (newPartyCode: string, newPlaylistId: string) => {
-    const isOwner = await fetch(`/api/playlist-owner`, {
+    const isOwner = await fetch(`/api/playlist-owner?code=${encodeURIComponent(newPartyCode)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ Code: newPartyCode }),
       credentials: 'include'
     });
     const ownerResponse = await isOwner.json();
@@ -72,7 +71,28 @@ export default function Page() {
 
         // Update Redux state with the code from URL if it exists
         if (searchParams?.get('code')) {
-          dispatch(setPartyCode(searchParams.get('code')!));
+          // Also get the playlist ID for this code to keep Redux state consistent
+          try {
+            const playlistsResponse = await fetch('/api/playlists', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include'
+            });
+            if (playlistsResponse.ok) {
+              const playlistsData = await playlistsResponse.json();
+              const currentPlaylist = playlistsData.find((p: any) => p.code === searchParams.get('code'));
+              if (currentPlaylist) {
+                dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: currentPlaylist.id.toString()}));
+              } else {
+                dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+              }
+            } else {
+              dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+            }
+          } catch (err) {
+            console.error('Error fetching playlist for Redux state:', err);
+            dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+          }
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);

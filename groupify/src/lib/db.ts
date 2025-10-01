@@ -1,40 +1,73 @@
 import dotenv from 'dotenv';
-import mariadb, { PoolConnection } from 'mariadb';
+import mariadb, { Pool, PoolConnection } from 'mariadb';
 
 dotenv.config();
 
-const dbName: string = process.env.DB_NAME || 'groupify';
-const dbUser: string = process.env.DB_USER || 'groupify';
-const dbPassword: string = process.env.DB_PASSWORD || 'groupify';
-const dbHost: string = process.env.DB_HOST || '127.0.0.1';
-const dbPort: number = parseInt(process.env.DB_PORT || '3306', 10);
+// Define the configuration for the database connection pool in one place.
+const dbConfig = {
+  host: process.env.DB_HOST || 'db',
+  user: process.env.DB_USER || 'groupify',
+  password: process.env.DB_PASSWORD || 'groupify',
+  database: process.env.DB_NAME || 'groupify',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  connectionLimit: 20,      // Max number of connections in the pool
+  acquireTimeout: 30000,    // 30 seconds to wait for a connection before timing out
+  waitForConnections: true, // Wait for a connection if all are in use (prevents errors on load)
+  queueLimit: 0,            // No limit on the number of waiting requests
+};
 
-export const pool = mariadb.createPool({
-  host: dbHost,
-  user: dbUser,
-  password: dbPassword,
-  database: dbName,
-  port: dbPort,
-  connectionLimit: 20,
-  multipleStatements: true,
-  acquireTimeout: 20000
-});
+/**
+ * A singleton instance of the MariaDB connection pool.
+ * This ensures that only one pool is created and shared across the entire application,
+ * which is critical for performance and stability, especially in a hot-reloading environment.
+ */
+let pool: Pool;
+
+function getPool(): Pool {
+  if (!pool) {
+    console.log('Creating new MariaDB connection pool...');
+    pool = mariadb.createPool(dbConfig);
+  }
+  return pool;
+}
+
+/**
+ * Acquires a database connection from the pool.
+ *
+ * IMPORTANT: You MUST release the connection back to the pool when you are done with it.
+ * The best practice is to use a `finally` block to ensure the connection is always released,
+ * even if an error occurs.
+ *
+ * @example
+ * let conn;
+ * try {
+ *   conn = await getDBConnection();
+ *   const rows = await conn.query("SELECT * FROM users");
+ *   // ... do something with rows
+ * } catch (err) {
+ *   console.error(err);
+ * } finally {
+ *   if (conn) await conn.release();
+ * }
+ */
 
 let dbInitialized = false;
 let dbInitPromise: Promise<void> | null = null;
 let dbInitError: Error | null = null;
 
+
+
+
+
+
+
 export async function getDBConnection(): Promise<PoolConnection> {
-  let connection: PoolConnection;
   try {
-    connection = await pool.getConnection();
-    if (dbInitialized) {
-      await connection.query(`USE ${dbName}`);
-    }
+    const connection = await getPool().getConnection();
     return connection;
   } catch (err) {
-    console.error('Error retrieving a connection from the pool:', err);
-    // Don't reinitialize on connection errors
+    console.error('Failed to get DB connection from pool:', err);
+    // Rethrow the error so the calling function knows something went wrong.
     throw err;
   }
 }
@@ -45,7 +78,7 @@ async function checkDatabaseExists(conn: PoolConnection): Promise<boolean> {
       SELECT SCHEMA_NAME 
       FROM INFORMATION_SCHEMA.SCHEMATA 
       WHERE SCHEMA_NAME = ?
-    `, [dbName]);
+    `, [dbConfig.database]);
     return result.length > 0;
   } catch (err) {
     console.error('Error checking database existence:', err);
@@ -60,7 +93,7 @@ async function checkTablesExist(conn: PoolConnection): Promise<boolean> {
       FROM information_schema.tables 
       WHERE table_schema = ? 
       AND table_name IN ('users', 'tracks', 'votes', 'playlists', 'playlist_tracks', 'playlist_users')
-    `, [dbName]);
+    `, [dbConfig.database]);
     return result[0].count === 6;
   } catch (err) {
     console.error('Error checking tables existence:', err);
@@ -99,7 +132,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
       // Check if database and tables exist
       const dbExists = await checkDatabaseExists(conn);
       if (dbExists) {
-        await conn.query(`USE ${dbName}`);
+        await conn.query(`USE ${dbConfig.database}`);
         const tablesExist = await checkTablesExist(conn);
         if (tablesExist && !force) {
           console.log('Database and tables already exist, skipping initialization');
@@ -111,8 +144,8 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
 
       // If we get here, either the database doesn't exist or we're forcing initialization
       console.log('Initializing database...');
-      await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
-      await conn.query(`USE ${dbName}`);
+      await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+      await conn.query(`USE ${dbConfig.database}`);
 
       // Disable foreign key checks before dropping tables
       await conn.query('SET FOREIGN_KEY_CHECKS=0');

@@ -2,7 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import playlists from '@/db/playlists';
 
 export async function GET( request: NextRequest ) {
-  const { Code } = await request.json();
+  const { searchParams } = new URL(request.url);
+  const Code = searchParams.get('code');
     try {
 
     const session = request.cookies.get('session')?.value;

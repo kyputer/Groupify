@@ -256,9 +256,20 @@ export default function DashboardPage({
     }
   };
 
-  // Find the current playlist object by PlaylistID
-  const currentPlaylist = playlists.find(p => String(p.id) === String(PlaylistID));
+  // Find the current playlist object by PlaylistID or PartyCode
+  const currentPlaylist = playlists.find(p => 
+    String(p.id) === String(PlaylistID) || p.code === PartyCode
+  );
   const isPlaylistSelected = !!currentPlaylist;
+  
+  // Debug logging to help troubleshoot
+  console.log('Dashboard Debug:', {
+    PlaylistID,
+    PartyCode,
+    playlistsCount: playlists.length,
+    currentPlaylist: currentPlaylist ? {id: currentPlaylist.id, code: currentPlaylist.code} : null,
+    isPlaylistSelected
+  });
 
   return (
     <div className="dashboard-container bg-white dark:bg-gray-900">

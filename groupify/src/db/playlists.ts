@@ -5,18 +5,18 @@ import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
 import { getTrackDetails } from '@/lib/spotify'; 
 import { generateCode } from '@/lib/utils';
 
-const playlists = {
-  createPlaylist,
-  getAllPublicPlaylists,
-  getUserPlaylists,
-  getPlaylistID,
-  joinPlaylist,
-  leavePlaylist,
-  joinPlaylistWithID,
-  findPlaylistByCodeOrId,
-  ensurePlaylistExists,
-  addTrackToPlaylist
-}
+// const playlists = {
+//   createPlaylist,
+//   getAllPublicPlaylists,
+//   getUserPlaylists,
+//   getPlaylistID,
+//   joinPlaylist,
+//   leavePlaylist,
+//   joinPlaylistWithID,
+//   findPlaylistByCodeOrId,
+//   ensurePlaylistExists,
+//   addTrackToPlaylist
+// }
 
 export async function createPlaylist(
   name: string,
@@ -298,6 +298,22 @@ export async function ensurePlaylistExists({
   return playlist;
 }
 
+export async function checkPlaylistOwner(userID: string, playlistID: string): Promise<boolean> {
+  const conn = await getDBConnection();
+  try {
+    const result = await conn.query('SELECT created_by FROM playlists WHERE PlaylistID = ?', [playlistID]);
+    if (result.length === 0) {
+      return false;
+    }
+    return result[0].created_by.toString() === userID.toString();
+  } catch (error) {
+    console.error('Error checking playlist owner:', error);
+    return false;
+  } finally {
+    conn.release();
+  }
+}
+
 export async function addTrackToPlaylist({
   playlistCode,
   trackId,
@@ -374,5 +390,19 @@ export async function addTrackToPlaylist({
     conn.release();
   }
 }
+
+const playlists = {
+  createPlaylist,
+  getAllPublicPlaylists,
+  getUserPlaylists,
+  getPlaylistID,
+  joinPlaylist,
+  leavePlaylist,
+  joinPlaylistWithID,
+  findPlaylistByCodeOrId,
+  ensurePlaylistExists,
+  addTrackToPlaylist,
+  checkPlaylistOwner
+};
 
 export default playlists;
