@@ -251,6 +251,9 @@ export default function DashboardPage({
         // Refresh playlists to update join status
         await fetchPlaylists(true);
         
+        // Switch to dashboard tab after joining
+        setTabIndex(0);
+        
         // Navigate to dashboard with the new party code
         router.push(`/dashboard?code=${data.partyCode}`);
       } else {
