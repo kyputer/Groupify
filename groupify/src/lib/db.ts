@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import mariadb, { Pool, PoolConnection } from 'mariadb';
+import { logger } from './logger';
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ let pool: Pool;
 
 function getPool(): Pool {
   if (!pool) {
-    console.log('Creating new MariaDB connection pool...');
+    logger.log('Creating new MariaDB connection pool...');
     pool = mariadb.createPool(dbConfig);
   }
   return pool;
@@ -66,7 +67,7 @@ export async function getDBConnection(): Promise<PoolConnection> {
     const connection = await getPool().getConnection();
     return connection;
   } catch (err) {
-    console.error('Failed to get DB connection from pool:', err);
+    logger.error('Failed to get DB connection from pool:', err);
     // Rethrow the error so the calling function knows something went wrong.
     throw err;
   }
@@ -81,7 +82,7 @@ async function checkDatabaseExists(conn: PoolConnection): Promise<boolean> {
     `, [dbConfig.database]);
     return result.length > 0;
   } catch (err) {
-    console.error('Error checking database existence:', err);
+    logger.error('Error checking database existence:', err);
     return false;
   }
 }
@@ -96,30 +97,30 @@ async function checkTablesExist(conn: PoolConnection): Promise<boolean> {
     `, [dbConfig.database]);
     return result[0].count === 6;
   } catch (err) {
-    console.error('Error checking tables existence:', err);
+    logger.error('Error checking tables existence:', err);
     return false;
   }
 }
 
 export async function initializeDatabase(force: boolean = false): Promise<void> {
-  console.log('Checking database initialization');
+  logger.log('Checking database initialization');
   
   // If we've already initialized successfully, don't reinitialize unless forced
   if (!force && dbInitialized) {
-    console.log('Database already initialized, skipping initialization');
+    logger.log('Database already initialized, skipping initialization');
     return;
   }
 
   // If we have a pending initialization, wait for it
   if (dbInitPromise) {
-    console.log('Waiting for pending initialization');
+    logger.log('Waiting for pending initialization');
     await dbInitPromise;
     return;
   }
 
   // If we had a previous initialization error and we're not forcing, don't retry
   if (!force && dbInitError) {
-    console.log('Previous initialization failed, skipping initialization');
+    logger.log('Previous initialization failed, skipping initialization');
     throw dbInitError;
   }
 
@@ -127,7 +128,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
     let conn: PoolConnection | undefined;
     try {
       conn = await getDBConnection();
-      console.log('Connected to database');
+      logger.log('Connected to database');
 
       // Check if database and tables exist
       const dbExists = await checkDatabaseExists(conn);
@@ -135,7 +136,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
         await conn.query(`USE ${dbConfig.database}`);
         const tablesExist = await checkTablesExist(conn);
         if (tablesExist && !force) {
-          console.log('Database and tables already exist, skipping initialization');
+          logger.log('Database and tables already exist, skipping initialization');
           dbInitialized = true;
           dbInitError = null;
           return;
@@ -143,7 +144,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
       }
 
       // If we get here, either the database doesn't exist or we're forcing initialization
-      console.log('Initializing database...');
+      logger.log('Initializing database...');
       await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
       await conn.query(`USE ${dbConfig.database}`);
 
@@ -155,7 +156,7 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
       await conn.query('DROP TABLE IF EXISTS votes');
       await conn.query('DROP TABLE IF EXISTS tracks');
       await conn.query('DROP TABLE IF EXISTS playlist_users');
-      console.log('Dropped existing tables');
+      logger.log('Dropped existing tables');
       // Recreate the tables; Re-enable foreign key checks
       await conn.query('SET FOREIGN_KEY_CHECKS=1');
 
@@ -258,9 +259,9 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
 
       dbInitialized = true;
       dbInitError = null;
-      console.log('Database initialized successfully!');
+      logger.log('Database initialized successfully!');
     } catch (err) {
-      console.error("Error initializing database:", err);
+      logger.error("Error initializing database:", err);
       dbInitError = err as Error;
       throw err;
     } finally {
@@ -273,18 +274,18 @@ export async function initializeDatabase(force: boolean = false): Promise<void> 
   await dbInitPromise;
   } catch (err) {
     // Don't rethrow the error, just log it
-    console.error('Database initialization failed:', err);
+    logger.error('Database initialization failed:', err);
   }
 }
 
-export async function findUserByUsername(username: string): Promise<any | null> {
+export async function findUserByUsername(username: string): Promise<object | null> {
   let conn: PoolConnection | undefined;
   try {
     conn = await getDBConnection();
     const rows = await conn.query('SELECT * FROM users WHERE username = ?', [username]);
     return rows.length > 0 ? rows[0] : null;
   } catch (err) {
-    console.error('Database error:', err);
+    logger.error('Database error:', err);
     return null;
   } finally {
     if (conn) await conn.release();

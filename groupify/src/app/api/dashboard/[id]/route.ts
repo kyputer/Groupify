@@ -3,6 +3,7 @@ import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 import tracks from '@/db/tracks';
 import { getPlaylistID } from '@/db/playlists';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -12,11 +13,11 @@ export async function GET(
     const { id } = await params;
     const session = request.cookies.get('session')?.value;
     
-    console.log('Dashboard API called with id:', id);
-    console.log('Session:', session);
+    logger.log('Dashboard API called with id:', id);
+    logger.log('Session:', session);
     
     if (!session) {
-      console.log('No session found');
+      logger.log('No session found');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -25,7 +26,7 @@ export async function GET(
 
     // Return empty dashboard if no ID is provided
     if (!id) {
-      console.log('No ID provided');
+      logger.log('No ID provided');
       return NextResponse.json({
         PlayedJson: [] as Song[],
         HotJson: [] as Song[],
@@ -36,10 +37,10 @@ export async function GET(
 
     // The id parameter is now a code instead of the actual playlist ID
     const playlistID = await getPlaylistID(id);
-    console.log('Playlist ID from code:', playlistID);
+    logger.log('Playlist ID from code:', playlistID);
     
     if (!playlistID) {
-      console.log(`No playlist found for code: ${id}`);
+      logger.log(`No playlist found for code: ${id}`);
       return NextResponse.json({
         PlayedJson: [] as Song[],
         HotJson: [] as Song[],
@@ -48,14 +49,14 @@ export async function GET(
       });
     }
 
-    console.log("Fetching dashboard data for playlist code:", id);
-    console.log("Calling getHot with UserID:", session, "PlaylistID:", playlistID.toString());
+    logger.log("Fetching dashboard data for playlist code:", id);
+    logger.log("Calling getHot with UserID:", session, "PlaylistID:", playlistID.toString());
     const hotSongs = await tracks.getHot(session, playlistID.toString());
-    console.log("Hot songs returned:", hotSongs);
+    logger.log("Hot songs returned:", hotSongs);
 
-    console.log("Fetching played songs for playlist code:", id);
+    logger.log("Fetching played songs for playlist code:", id);
     const playedSongs = await tracks.getPlayed(session, playlistID.toString());
-    console.log("Played songs returned:", playedSongs);
+    logger.log("Played songs returned:", playedSongs);
 
     // Transform hot songs into the expected format
     const hotVotes = hotSongs.map(song => ({
@@ -71,10 +72,10 @@ export async function GET(
       UserID: session
     };
 
-    console.log("Returning dashboard data:", data);
+    logger.log("Returning dashboard data:", data);
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    logger.error('Error fetching dashboard data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch dashboard data' },
       { status: 500 }

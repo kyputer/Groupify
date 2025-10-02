@@ -2,14 +2,15 @@
 
 import { Song } from '../interfaces/Song';
 import { Vote } from '../interfaces/Vote';
+import { Playlist } from '../interfaces/Playlist';
 import SearchBar from './SearchBar';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { LeavePartyButton } from './LeavePartyButton';
 import { LogOutButton } from './LogOutButton';
 import SongCard from './SongCard';
-import { Tabs, TabList, Tab, TabPanel } from "react-tabs"
-import "react-tabs/style/react-tabs.css"
+import { Tabs, TabList, Tab, TabPanel } from 'react-tabs'; // No need to import 'react-tabs/style/react-tabs.css' as a module
+// import "react-tabs/style/react-tabs.css";
 import { RainbowButton } from './RainbowButton';
 import { ClosePartyButton } from './CloseParty';
 import Page from '@/app/join-party/page';  
@@ -34,7 +35,7 @@ export default function DashboardPage({
   onPartyJoin,
   isOwner
 }: DashboardProps) {
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [hotTracks, setHotTracks] = useState<Song[]>(HotJson);
   const [hotVotes, setHotVotes] = useState<Vote[]>(HotVotes);
   const [playedTracks, setPlayedTracks] = useState<Song[]>(PlayedJson);
@@ -69,9 +70,10 @@ export default function DashboardPage({
     }
   }, [router]);
 
-  const fetchPlaylists = useCallback(async () => {
+  const fetchPlaylists = useCallback(async (forceRefresh = false) => {
     try {
-      const response = await fetch('/api/playlists', {
+      const url = forceRefresh ? '/api/playlists?refresh=true' : '/api/playlists';
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +86,7 @@ export default function DashboardPage({
       }
       const data = await response.json();
       // Sort playlists: joined ones first, then by creation date
-      const sortedPlaylists = data.sort((a: any, b: any) => {
+      const sortedPlaylists = data.sort((a: Playlist, b: Playlist) => {
         // First sort by joined status
         if (a.code === PartyCode && b.code !== PartyCode) return -1;
         if (a.code !== PartyCode && b.code === PartyCode) return 1;
@@ -246,7 +248,10 @@ export default function DashboardPage({
           setPlayedTracks(refreshData.PlayedJson);
         }
         
-        // Force a complete page refresh with the new party code
+        // Refresh playlists to update join status
+        await fetchPlaylists(true);
+        
+        // Navigate to dashboard with the new party code
         router.push(`/dashboard?code=${data.partyCode}`);
       } else {
         console.error('Failed to join playlist');
@@ -262,14 +267,19 @@ export default function DashboardPage({
   );
   const isPlaylistSelected = !!currentPlaylist;
   
-  // Debug logging to help troubleshoot
-  console.log('Dashboard Debug:', {
-    PlaylistID,
-    PartyCode,
-    playlistsCount: playlists.length,
-    currentPlaylist: currentPlaylist ? {id: currentPlaylist.id, code: currentPlaylist.code} : null,
-    isPlaylistSelected
-  });
+  // Debug logging only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Dashboard Debug:', {
+      PlaylistID,
+      PartyCode,
+      playlistsCount: playlists.length,
+      currentPlaylist: currentPlaylist ? {id: currentPlaylist.id, code: currentPlaylist.code} : null,
+      isPlaylistSelected
+    });
+  }
+
+  // Add setTabIndex function for Tab navigation
+  const [tabIndex, setTabIndex] = useState(0);
 
   return (
     <div className="dashboard-container bg-white dark:bg-gray-900">
@@ -298,7 +308,7 @@ export default function DashboardPage({
           <LogOutButton/>
         </div>
       </nav>
-      <Tabs className={`${isMobile ? 'mt-24 relative pb-20' : 'mt-24'}`}>
+      <Tabs selectedIndex={tabIndex} onSelect={setTabIndex} className={`${isMobile ? 'mt-24 relative pb-20' : 'mt-24'}`}>
         <TabList className={`${isMobile ? 'fixed bottom-0 left-0 right-0 bg-gray-900 z-[1000] flex justify-center items-center border-t border-gray-700' : 'flex justify-center items-center border-b border-gray-700'}`}>
           <Tab style={{minWidth:"33%"}} className={`text-white font-bold text-xl text-center py-4 hover:bg-gray-800 transition-colors flex flex-col items-center gap-1 ${isMobile ? '' : 'px-8'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -412,7 +422,10 @@ export default function DashboardPage({
           <h2 className="text-white text-xl">
             Party Code: <span className="text-[#FF6B6B] font-bold">{PartyCode}</span>
           </h2>
-          <LeavePartyButton PartyCode={PartyCode} />
+          <LeavePartyButton 
+            PartyCode={PartyCode} 
+            onLeave={() => fetchPlaylists(true)}
+          />
         </div>
         )}
 
@@ -437,7 +450,7 @@ export default function DashboardPage({
                       ) : playlist.isJoined ? (
                         <button
                           className="bg-gray-700 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition-colors whitespace-nowrap"
-                          onClick={() => handleJoinPlaylist(playlist.id)}
+                          onClick={() => handleJoinPlaylist(playlist.id.toString())}
                           aria-label={`Re-join playlist ${playlist.name}`}
                         >
                           Re-Join
@@ -445,7 +458,7 @@ export default function DashboardPage({
                       ) : (
                         <button
                           className="bg-gray-700 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition-colors whitespace-nowrap"
-                          onClick={() => handleJoinPlaylist(playlist.id)}
+                          onClick={() => handleJoinPlaylist(playlist.id.toString())}
                           aria-label={`Join playlist ${playlist.name}`}
                         >
                           Join
@@ -467,18 +480,15 @@ export default function DashboardPage({
               Want to start a party?
               <RainbowButton href='/generate-party' text='Start a party!' className='mt-4'/>
             </div>  
-
+          </div>
         </div>
-      </div>
         </TabPanel>
         <TabPanel className={isMobile ? 'pb-16' : ''}>
             <div className='dashboard-content'>
-              <Page />
+              <Page setTabIndex={setTabIndex} />
             </div>
         </TabPanel>
       </Tabs>
-      
     </div>
-
   );
 }

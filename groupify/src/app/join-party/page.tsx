@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux';
 import { setPartyCode } from '@/lib/features/partySlice';
 
 interface PageProps {
-    setTabIndex: (index: number) => void;
+    setTabIndex?: (index: number) => void;
 }
 
 export default function Page({setTabIndex}: PageProps) {
@@ -47,7 +47,11 @@ export default function Page({setTabIndex}: PageProps) {
             if (result.success) {
                 dispatch(setPartyCode({code: result.partyCode, playlistID: playlistId}));
                 setError('');
-                setTabIndex(0);
+                if (setTabIndex) {
+                    setTabIndex(0);
+                } else {
+                    router.push(`/dashboard?code=${result.partyCode}`);
+                }
             } else {
                 setError(result.error);
             }
@@ -84,7 +88,11 @@ export default function Page({setTabIndex}: PageProps) {
             console.log('Playlist ID set:', result.playlistID);
             setError('');
             setParty(['', '', '', '', '', '', '', '']);
-            setTabIndex(0);
+            if (setTabIndex) {
+                setTabIndex(0);
+            } else {
+                router.push(`/dashboard?code=${code}`);
+            }
         } else {
             setError(result.error);
         }

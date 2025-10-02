@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { findById } from '@/db/users';
 import SpotifyWebApi from 'spotify-web-api-node';
+import { logger } from '@/lib/logger';
 
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -11,10 +12,9 @@ const spotifyApi = new SpotifyWebApi({
 export async function GET(request: Request) {
   try {
   const cookies = request.headers.get('cookie');
-    console.log('Raw cookies:', cookies);
+    logger.log('Raw cookies:', cookies);
 
     if (!cookies) {
-      console.log('No cookies found in request');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
@@ -22,32 +22,32 @@ export async function GET(request: Request) {
       .map(c => c.trim())
       .find(c => c.startsWith('session='));
     
-    console.log('Session cookie:', sessionCookie);
+    logger.log('Session cookie:', sessionCookie);
 
     if (!sessionCookie) {
-      console.log('No session cookie found');
+      logger.log('No session cookie found');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
     const session = sessionCookie.split('=')[1];
     const userId = session ? parseInt(session, 10) : null;
-    console.log('Session value:', session);
+    logger.log('Session value:', session);
 
     if (!session) {
-      console.log('Empty session value');
+      logger.log('Empty session value');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
     // Check if the user exists in our database
     const user = await findById(session);
-    console.log('Database lookup result:', user);
+    logger.log('Database lookup result:', user);
     
     if (!user) {
-      console.log('User not found in database');
+      logger.log('User not found in database');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    console.log('User authenticated:', user.id);
+    logger.log('User authenticated:', user.id);
     
     return NextResponse.json({ 
       authenticated: true,
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Auth check error:', error);
+    logger.error('Auth check error:', error);
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }

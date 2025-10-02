@@ -1,5 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import playlists from '@/db/playlists';
+import { logger } from '@/lib/logger';
+import { cache } from '@/lib/cache';
 
 export async function POST(request: NextRequest) {    
     try {
@@ -29,13 +31,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Invalidate cache for this user since playlist membership changed
+        const cacheKey = `playlists:${session}`;
+        cache.delete(cacheKey);
+
         return NextResponse.json({
             success: true,
             message: "Joined party successfully",
             playlistID: PlaylistID
         });
     } catch (error) {
-        console.error('Error in joining party code route:', error);
+        logger.error('Error in joining party code route:', error);
         return NextResponse.json(
             { error: 'Failed to join party code' },
             { status: 500 }

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import playlists from '@/db/playlists';
+import { logger } from '@/lib/logger';
 
 export async function GET( request: NextRequest ) {
   const { searchParams } = new URL(request.url);
@@ -8,11 +9,11 @@ export async function GET( request: NextRequest ) {
 
     const session = request.cookies.get('session')?.value;
     
-    console.log('Playlist owner API called');
-    console.log('Session:', session);
+    logger.log('Playlist owner API called');
+    logger.log('Session:', session);
     
     if (!session) {
-      console.log('No session found');
+      logger.log('No session found');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -34,10 +35,10 @@ export async function GET( request: NextRequest ) {
         );
     }
     const isOwner = await playlists.checkPlaylistOwner(session, playlistID.toString());
-    console.log(`${session} is owner to ${playlistID}: ${isOwner}`);
+    logger.log(`${session} is owner to ${playlistID}: ${isOwner}`);
     return NextResponse.json({ isOwner: isOwner });
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    logger.error('Error fetching dashboard data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch dashboard data' },
       { status: 500 }

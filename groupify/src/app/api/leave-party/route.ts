@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import playlists from '@/db/playlists';
+import { logger } from '@/lib/logger';
+import { cache } from '@/lib/cache';
 
 export async function POST(request: NextRequest) {
     try {
@@ -7,7 +9,7 @@ export async function POST(request: NextRequest) {
         const session = request.cookies.get('session')?.value;
         
         if (!session) {
-            console.log('No session found');
+            logger.log('No session found');
             return NextResponse.json(
               { error: 'Unauthorized' },
               { status: 401 }
@@ -17,15 +19,20 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         
-        // TODO: Implement leave party
+        // Leave the party
         await playlists.leavePlaylist(PartyCode, session);
+        
+        // Invalidate cache for this user since playlist membership changed
+        const cacheKey = `playlists:${session}`;
+        cache.delete(cacheKey);
+        
         return NextResponse.json({
             success: true,
             message: "Successfully left party",
             status: 200
         });
     } catch (error) {
-        console.error('Error leaving party:', error);
+        logger.error('Error leaving party:', error);
         return NextResponse.json({ error: 'Failed to leave party' }, { status: 500 });
     }
 }

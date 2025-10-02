@@ -7,6 +7,7 @@ import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
 import { useSearchParams } from 'next/navigation';
 import { setPartyCode, setPartyCodeOwner } from '@/lib/features/partySlice';
+import { logger } from '@/lib/logger';
 
 export default function Page() {
   const dispatch = useDispatch();
@@ -70,32 +71,37 @@ export default function Page() {
         setData(dashboardData);
 
         // Update Redux state with the code from URL if it exists
-        if (searchParams?.get('code')) {
-          // Also get the playlist ID for this code to keep Redux state consistent
-          try {
-            const playlistsResponse = await fetch('/api/playlists', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include'
-            });
-            if (playlistsResponse.ok) {
-              const playlistsData = await playlistsResponse.json();
-              const currentPlaylist = playlistsData.find((p: any) => p.code === searchParams.get('code'));
-              if (currentPlaylist) {
-                dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: currentPlaylist.id.toString()}));
+        if (searchParams?.get('code') && searchParams.get('code') !== partyCode) {
+          // Only fetch playlists if we don't already have the correct playlist ID in Redux
+          if (!playlistID) {
+            try {
+              const playlistsResponse = await fetch('/api/playlists', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+              });
+              if (playlistsResponse.ok) {
+                const playlistsData = await playlistsResponse.json();
+                const currentPlaylist = playlistsData.find((p: {id: number, code: string}) => p.code === searchParams.get('code'));
+                if (currentPlaylist) {
+                  dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: currentPlaylist.id.toString()}));
+                } else {
+                  dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+                }
               } else {
                 dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
               }
-            } else {
+            } catch (err) {
+              logger.error('Error fetching playlist for Redux state:', err);
               dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
             }
-          } catch (err) {
-            console.error('Error fetching playlist for Redux state:', err);
-            dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+          } else {
+            // We already have playlist ID, just update the code
+            dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: playlistID}));
           }
         }
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
+        logger.error('Error fetching dashboard data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
       }
     };
@@ -103,7 +109,7 @@ export default function Page() {
     if (userId) {
       fetchData();
     }
-  }, [userId, partyCode, searchParams, dispatch]);
+  }, [userId, partyCode, searchParams, dispatch, playlistID]);
 
   if (error) {
     return <div className="flex items-center justify-center h-screen text-red-500">{error}</div>;

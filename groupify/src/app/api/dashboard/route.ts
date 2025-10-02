@@ -1,4 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
+import { Song } from '@/interfaces/Song';
+import { Vote } from '@/interfaces/Vote';
 
 export async function GET(
   request: NextRequest
@@ -7,10 +10,9 @@ export async function GET(
 
     const session = request.cookies.get('session')?.value;
     
-    console.log('Session:', session);
-    
+    logger.log('Session:', session);
     if (!session) {
-      console.log('No session found');
+      logger.log('No session found');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -19,7 +21,7 @@ export async function GET(
 
     // Return empty dashboard if no ID is provided
 
-      console.log('No ID provided');
+      logger.log('No ID provided');
       return NextResponse.json({
         PlayedJson: [] as Song[],
         HotJson: [] as Song[],
@@ -29,7 +31,7 @@ export async function GET(
     
 
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    logger.error('Error fetching dashboard data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch dashboard data' },
       { status: 500 }
