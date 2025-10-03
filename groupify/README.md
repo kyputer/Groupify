@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Groupify - Collaborative Music Playlist App
 
-## Getting Started
+A Next.js application for creating collaborative music playlists with Spotify integration.
 
-First, run the development server:
+## Quick Setup for New Developers
+
+### Option 1: Easy Setup (Recommended)
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start Docker containers: `docker compose up --build`
+4. Initialize database by visiting: **http://localhost:3000/api/dev-reset**
+5. Visit the app: **http://localhost:3000**
+
+### Option 2: Manual Setup
+
+1. Clone the repository
+2. Copy `.env.example` to `.env` and fill in your values
+3. Install dependencies: `npm install`
+4. Start Docker containers: `docker compose up --build`
+5. Hit the reset button in the app or visit `/api/dev-reset`
+
+## Database Initialization
+
+The database will be automatically created when you visit `/api/dev-reset`. This endpoint:
+
+- Creates the `groupify` database if it doesn't exist
+- Drops and recreates all tables with fresh schema
+- Clears the application cache
+- Only works in development mode
+
+## Environment Variables
+
+Required variables (copy from `.env.example`):
+
+- `SPOTIFY_CLIENT_ID` - Your Spotify app client ID
+- `SPOTIFY_CLIENT_SECRET` - Your Spotify app client secret
+- `SPOTIFY_REDIRECT_URI` - OAuth redirect URI (usually `http://localhost:3000/api/callback`)
+- `SESSION_SECRET` - Random string for session encryption
+- `DB_HOST` - Database host (use `db` for Docker)
+- `DB_USER` - Database username (default: `groupify`)
+- `DB_PASSWORD` - Database password (default: `groupify`)
+- `DB_NAME` - Database name (default: `groupify`)
+
+## Development Commands
 
 ```bash
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Reset database (alternative to visiting /api/dev-reset)
+curl -X POST http://localhost:3000/api/dev-reset
+
+# View logs
+docker compose logs -f web-1
+
+# Stop containers
+docker compose down
+
+# Complete reset (removes volumes)
+docker compose down -v
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## API Endpoints
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `GET/POST /api/dev-reset` - Initialize/reset database (dev only)
+- `POST /api/auth` - User authentication
+- `GET /api/playlists` - Get user playlists
+- `POST /api/generate-party-code` - Create new playlist/party
+- `GET /api/dashboard/[code]` - Get playlist data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architecture
 
-## Learn More
+- **Frontend**: Next.js 15 with TypeScript and Redux Toolkit
+- **Backend**: Next.js API routes
+- **Database**: MariaDB with connection pooling
+- **Containerization**: Docker with docker-compose
+- **Styling**: Tailwind CSS
 
-To learn more about Next.js, take a look at the following resources:
+## Troubleshooting
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Database connection issues?**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Visit `http://localhost:3000/api/dev-reset` to initialize the database
+- Check that Docker containers are running: `docker compose ps`
 
-## Deploy on Vercel
+**Cache issues after changes?**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Visit `/api/dev-reset` to clear cache and reset database
+- Or restart containers: `docker compose restart`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Spotify integration not working?**
+
+- Ensure your Spotify app is configured with the correct redirect URI
+- Check that `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are set correctly

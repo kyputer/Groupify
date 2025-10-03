@@ -51,6 +51,25 @@ class SimpleCache {
   }
 
   /**
+   * Clean up expired entries
+   */
+  cleanup(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expires) {
+        this.cache.delete(key);
+        cleanedCount++;
+      }
+    }
+
+    if (cleanedCount > 0) {
+      console.log(`Cache cleanup: removed ${cleanedCount} expired entries`);
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   getStats() {
