@@ -14,6 +14,8 @@ import SongCard from './SongCard';
 import Page from '@/app/join-party/page';
 import { ClosePartyButton } from './CloseParty';
 import { RainbowButton } from './RainbowButton';
+import { SpotifyPlayer } from './SpotifyPlayer';
+
 interface DashboardProps {
   PlayedJson: Song[];
   HotJson: Song[];
@@ -111,13 +113,16 @@ export default function DashboardPage({
   const fetchPlaylists = useCallback(
     async (forceRefresh = false) => {
       try {
+        // Always force refresh when explicitly requested to avoid stale cache
         const url = forceRefresh
-          ? '/api/playlists?refresh=true'
+          ? `/api/playlists?refresh=true&t=${Date.now()}` // Add timestamp to prevent any caching
           : '/api/playlists';
+        
         const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': forceRefresh ? 'no-cache' : 'default', // Prevent browser cache
           },
           credentials: 'include',
         });
@@ -125,7 +130,10 @@ export default function DashboardPage({
         if (!response.ok) {
           throw new Error('Failed to fetch playlists');
         }
+        
         const data = await response.json();
+        console.log('Fetched playlist data:', data);
+        
         // Sort playlists: joined ones first, then by creation date
         const sortedPlaylists = data.sort((a: Playlist, b: Playlist) => {
           // First sort by joined status
@@ -138,7 +146,9 @@ export default function DashboardPage({
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         });
+        
         setPlaylists(sortedPlaylists);
+        console.log('Updated playlists state:', sortedPlaylists);
       } catch (err) {
         console.error('Error fetching playlists:', err);
       }
@@ -524,6 +534,17 @@ export default function DashboardPage({
         </TabList>
         <TabPanel className={isMobile ? 'pb-16' : ''}>
           <div className='dashboard-content first-panel'>
+            {/* Add Spotify Player */}
+            {isPlaylistSelected && (
+              <div className="mb-6">
+                <SpotifyPlayer 
+                  PartyCode={PartyCode}
+                  PlaylistID={PlaylistID}
+                  tracks={hotTracks}
+                />
+              </div>
+            )}
+
             <h2 className='section-title'>Now Playing</h2>
             <div className='playlist-section overflow-auto'>
               <div className='playlist-container overflow-y-scroll'>

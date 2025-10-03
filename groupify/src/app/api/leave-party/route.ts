@@ -22,9 +22,25 @@ export async function POST(request: NextRequest) {
     // Leave the party
     await playlists.leavePlaylist(PartyCode, session);
 
-    // Invalidate cache for this user since playlist membership changed
-    const cacheKey = `playlists:${session}`;
-    cache.delete(cacheKey);
+    // CRITICAL: Clear ALL playlist-related cache entries
+    const stats = cache.getStats();
+    const playlistCacheKeys = stats.keys.filter(
+      key =>
+        key.startsWith('playlists:') ||
+        key.includes('playlist') ||
+        key.includes(session)
+    );
+
+    playlistCacheKeys.forEach(key => {
+      cache.delete(key);
+      console.log('Cleared cache key:', key);
+    });
+
+    // Also clear general cache patterns
+    cache.delete(`playlists:${session}`);
+    cache.delete(`user:${session}:playlists`);
+
+    logger.log('All playlist cache cleared for user:', session);
 
     return NextResponse.json({
       success: true,

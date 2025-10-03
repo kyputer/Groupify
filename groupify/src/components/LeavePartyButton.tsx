@@ -4,7 +4,7 @@ import { clearPartyCode } from '@/lib/features/partySlice';
 
 interface LeavePartyButtonProps {
   PartyCode: string;
-  onLeave?: () => void; // Optional callback to refresh data
+  onLeave?: () => void;
 }
 
 export const LeavePartyButton = ({
@@ -16,6 +16,11 @@ export const LeavePartyButton = ({
 
   const handleLeaveParty = async () => {
     try {
+      console.log('Starting leave party process...');
+
+      // First clear Redux state immediately to prevent UI confusion
+      dispatch(clearPartyCode());
+
       const response = await fetch(`/api/leave-party`, {
         method: 'POST',
         headers: {
@@ -28,22 +33,24 @@ export const LeavePartyButton = ({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Clear state and trigger callback for data refresh
-        dispatch(clearPartyCode());
+        console.log('Successfully left party');
 
-        // Call the callback to refresh playlist data
+        // Force a hard refresh of playlists with cache busting
         if (onLeave) {
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
           onLeave();
         }
 
+        // Navigate away from current party
         router.push('/dashboard');
       } else {
         console.error('Failed to leave party:', result.error);
-        // You could add user notification here
+        // Restore Redux state if API call failed
+        // You might want to re-fetch the current state here
       }
     } catch (error) {
       console.error('Error leaving party:', error);
-      // You could add user notification here
+      // Handle error - maybe restore state or show user notification
     }
   };
 
