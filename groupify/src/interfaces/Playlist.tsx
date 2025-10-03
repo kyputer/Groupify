@@ -7,4 +7,5 @@ export interface Playlist {
   isPublic: boolean;
   description: string;
   isJoined: boolean;
+  spotifyUrl?: string; // Add optional Spotify URL
 }

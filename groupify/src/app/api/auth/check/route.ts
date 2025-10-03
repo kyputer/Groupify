@@ -1,64 +1,50 @@
-import { NextResponse } from 'next/server';
-import { findById } from '@/db/users';
-import SpotifyWebApi from 'spotify-web-api-node';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from 'next/server';
+import { executeQuery } from '@/lib/db';
 
-const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
-});
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const cookies = request.headers.get('cookie');
-    logger.log('Raw cookies:', cookies);
+    const cookies = request.headers.get('cookie') || '';
+    console.log('Raw cookies:', cookies);
 
-    if (!cookies) {
+    const sessionMatch = cookies.match(/session=([^;]+)/);
+    const sessionValue = sessionMatch?.[1];
+
+    console.log('Session cookie:', sessionMatch?.[0]);
+    console.log('Session value:', sessionValue);
+
+    if (!sessionValue) {
+      console.log('No session cookie found');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const sessionCookie = cookies
-      .split(';')
-      .map(c => c.trim())
-      .find(c => c.startsWith('session='));
+    // Use executeQuery for automatic connection management
+    const users = await executeQuery('SELECT * FROM users WHERE id = ?', [
+      parseInt(sessionValue, 10),
+    ]);
 
-    logger.log('Session cookie:', sessionCookie);
+    console.log('Database lookup result:', users[0] || null);
 
-    if (!sessionCookie) {
-      logger.log('No session cookie found');
+    if (users.length === 0) {
+      console.log('User not found in database');
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const session = sessionCookie.split('=')[1];
-    const userId = session ? parseInt(session, 10) : null;
-    logger.log('Session value:', session);
-
-    if (!session) {
-      logger.log('Empty session value');
-      return NextResponse.json({ authenticated: false }, { status: 401 });
-    }
-
-    // Check if the user exists in our database
-    const user = await findById(session);
-    logger.log('Database lookup result:', user);
-
-    if (!user) {
-      logger.log('User not found in database');
-      return NextResponse.json({ authenticated: false }, { status: 401 });
-    }
-
-    logger.log('User authenticated:', user.id);
+    const user = users[0];
+    console.log('User authenticated:', user.id);
 
     return NextResponse.json({
       authenticated: true,
       user: {
         id: user.id,
         username: user.username,
+        email: user.email,
       },
     });
   } catch (error) {
-    logger.error('Auth check error:', error);
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    console.error('Error in auth check:', error);
+    return NextResponse.json(
+      { authenticated: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -15,6 +15,7 @@ import Page from '@/app/join-party/page';
 import { ClosePartyButton } from './CloseParty';
 import { RainbowButton } from './RainbowButton';
 import { SpotifyPlayer } from './SpotifyPlayer';
+import { SpotifyButton } from './SpotifyButton';
 
 interface DashboardProps {
   PlayedJson: Song[];
@@ -545,13 +546,32 @@ export default function DashboardPage({
               </div>
             )}
 
+            {/* Add Spotify Playlist Button */}
+            {isPlaylistSelected && currentPlaylist?.spotifyUrl && (
+              <div className="mb-6 text-center">
+                <SpotifyButton 
+                  spotifyUrl={currentPlaylist.spotifyUrl}
+                  className="text-lg px-6 py-3"
+                />
+              </div>
+            )}
+
             <h2 className='section-title'>Now Playing</h2>
             <div className='playlist-section overflow-auto'>
               <div className='playlist-container overflow-y-scroll'>
                 {playedTracks && playedTracks.length > 0 ? (
                   <div className='flex flex-wrap gap-4 p-4'>
                     {playedTracks.map(song => (
-                      <SongCard key={song.id} song={song} showVoting={false} />
+                      <div key={song.id} className="relative">
+                        <SongCard song={song} showVoting={false} />
+                        {song.addedBy && (
+                          <div className="absolute -bottom-2 left-2 right-2">
+                            <div className="bg-gray-700 text-white text-xs px-2 py-1 rounded text-center">
+                              Added by {song.addedBy.username}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -599,6 +619,12 @@ export default function DashboardPage({
                                   .map(artist => artist.name)
                                   .join(', ')}
                               </p>
+                              {/* Add "Added by" info */}
+                              {song.addedBy && (
+                                <p className='text-xs text-gray-400 mt-1'>
+                                  Added by {song.addedBy.username}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className='vote-controls'>

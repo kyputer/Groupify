@@ -1,6 +1,13 @@
 import { getDBConnection } from '@/lib/db'; // Adjust the import path as needed
 import bcrypt from 'bcryptjs';
 
+interface User {
+  id: number;
+  username: string;
+  password_hash: string;
+  // Add other fields as needed
+}
+
 export async function findByUsername(username: string) {
   const conn = await getDBConnection();
   try {
@@ -16,7 +23,7 @@ export async function findByUsername(username: string) {
   }
 }
 
-export async function findById(userId: string): Promise<any | null> {
+export async function findById(userId: string): Promise<User | null> {
   let conn;
   try {
     conn = await getDBConnection();

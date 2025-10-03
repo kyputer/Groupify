@@ -1,4 +1,4 @@
-import { getDBConnection } from '@/lib/db';
+import { executeQuery, executeTransaction, getDBConnection } from '@/lib/db';
 import { Playlist } from '@/interfaces/Playlist';
 import { createSpotifyPlaylist } from '@/lib/spotify';
 import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
@@ -14,6 +14,7 @@ type PlaylistRow = {
   created_by: string;
   is_public: number;
   description: string;
+  spotify_url?: string; // Add this field
 };
 
 // const playlists = {
@@ -48,6 +49,8 @@ export async function createPlaylist(
     // Check for Spotify token and create Spotify playlist if available
     const { accessToken } = await getSpotifyTokensForUser(Number(createdBy));
     let splaylistres = null;
+    let spotifyUrl = null;
+
     if (accessToken) {
       splaylistres = await createSpotifyPlaylist(
         name,
@@ -56,6 +59,11 @@ export async function createPlaylist(
         createdBy
       );
       console.log('Spotify playlist creation response:', splaylistres);
+
+      // Extract Spotify URL from response
+      if (splaylistres?.external_urls?.spotify) {
+        spotifyUrl = splaylistres.external_urls.spotify;
+      }
     } else {
       console.log(
         'User does not have a Spotify token, skipping Spotify playlist creation'
@@ -79,11 +87,12 @@ export async function createPlaylist(
       `Creating playlist with code: ${code} and name: ${name} and description: ${description}`
     );
 
-    // Create the playlist
+    // Create the playlist with Spotify URL
     const result = await conn.query(
-      `INSERT INTO playlists (name, code, created_at, created_by, is_public, description)
-       VALUES (?, ?, NOW(), ?, ?, ?)`,
-      [name, code, createdBy, isPublic, description]
+      `INSERT INTO playlists (name, code, created_at, created_by, is_public, description, spotify_url)
+       VALUES (?, ?, NOW(), ?, ?, ?, ?)`,
+
+      [name, code, createdBy, isPublic, description, spotifyUrl]
     );
 
     const playlistId = result.insertId;
@@ -108,6 +117,7 @@ export async function createPlaylist(
       isPublic,
       description,
       isJoined: true,
+      spotifyUrl: spotifyUrl || undefined, // Add to return type
     };
   } catch (error) {
     console.error('Error creating playlist in database:', error);
@@ -117,81 +127,66 @@ export async function createPlaylist(
   }
 }
 
-export async function getAllPublicPlaylists(): Promise<Playlist[]> {
-  const conn = await getDBConnection();
-  try {
-    const rows = await conn.query(`
-      SELECT * FROM playlists 
-      WHERE is_public = 1 
-      AND open = 1
-      ORDER BY created_at DESC`);
+export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
+  console.log('Getting playlists for user:', userID);
 
-    return rows.map((row: PlaylistRow) => ({
-      id: Number(row.PlaylistID), // Ensure it's a number
-      name: row.name,
-      code: row.code,
-      createdAt: row.created_at,
-      createdBy: row.created_by,
-      isPublic: row.is_public === 1,
-      description: row.description,
-      isJoined: false,
-    }));
-  } finally {
-    conn.release();
-  }
+  const rows = await executeQuery(
+    `
+    SELECT playlists.*, playlist_users.Joined FROM playlists 
+    LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
+    WHERE playlist_users.UserID = ?
+    AND playlist_users.Joined = 1
+    AND playlists.open = 1
+    ORDER BY playlists.created_at DESC`,
+    [userID]
+  );
+
+  console.log('Found playlists:', rows.length);
+
+  return rows.map((row: PlaylistRow) => ({
+    id: Number(row.PlaylistID), // Ensure it's a number
+    name: row.name,
+    code: row.code,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    isPublic: row.is_public === 1,
+    description: row.description,
+    isJoined: true,
+    spotifyUrl: row.spotify_url,
+  }));
 }
 
-export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
-  const conn = await getDBConnection();
-  try {
-    console.log('Getting playlists for user:', userID);
+export async function getAllPublicPlaylists(): Promise<Playlist[]> {
+  const rows = await executeQuery(`
+    SELECT * FROM playlists 
+    WHERE is_public = 1 
+    AND open = 1
+    ORDER BY created_at DESC`
+  );
 
-    const rows = await conn.query(
-      `
-      SELECT playlists.*, playlist_users.Joined FROM playlists 
-      LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
-      WHERE playlist_users.UserID = ?
-      AND playlist_users.Joined = 1
-      AND playlists.open = 1
-      ORDER BY playlists.created_at DESC`,
-      [userID]
-    );
-
-    console.log('Found playlists:', rows.length);
-
-    return rows.map((row: PlaylistRow) => ({
-      id: Number(row.PlaylistID), // Ensure it's a number
-      name: row.name,
-      code: row.code,
-      createdAt: row.created_at,
-      createdBy: row.created_by,
-      isPublic: row.is_public === 1,
-      description: row.description,
-      isJoined: true,
-    }));
-  } finally {
-    conn.release();
-  }
+  return rows.map((row: PlaylistRow) => ({
+    id: Number(row.PlaylistID), // Ensure it's a number
+    name: row.name,
+    code: row.code,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    isPublic: row.is_public === 1,
+    description: row.description,
+    isJoined: false,
+    spotifyUrl: row.spotify_url,
+  }));
 }
 
 export async function getPlaylistID(code: string): Promise<number | null> {
-  const conn = await getDBConnection();
-  try {
-    const result = await conn.query(
-      'SELECT PlaylistID FROM playlists WHERE code = ?',
-      [code]
-    );
-    if (result.length === 0) {
-      console.log(`No playlist found with code: ${code}`);
-      return null;
-    }
-    return result[0].PlaylistID;
-  } catch (error) {
-    console.error('Error getting playlist ID:', error);
-    throw error;
-  } finally {
-    conn.release();
+  const result = await executeQuery(
+    'SELECT PlaylistID FROM playlists WHERE code = ?',
+    [code]
+  );
+
+  if (result.length === 0) {
+    return null;
   }
+  return result[0].PlaylistID;
 }
 
 export async function joinPlaylist(
@@ -375,6 +370,7 @@ export async function findPlaylistByCodeOrId(
       isPublic: row.is_public === 1,
       description: row.description,
       isJoined: false,
+      spotifyUrl: row.spotify_url,
     };
   } finally {
     conn.release();

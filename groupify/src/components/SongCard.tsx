@@ -1,5 +1,7 @@
-import { Song } from '../interfaces/Song';
+'use client';
+
 import { Vote } from '../interfaces/Vote';
+import { Song } from '@/interfaces/Song';
 import VoteButtons from './VoteButtons';
 import { formatDuration } from '../lib/utils';
 
