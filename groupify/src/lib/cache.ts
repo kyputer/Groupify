@@ -3,45 +3,35 @@
  * This helps reduce database load for frequently accessed data
  */
 
-interface CacheEntry<T> {
-  data: T;
-  expiresAt: number;
-}
-
-class MemoryCache {
-  private cache = new Map<string, CacheEntry<unknown>>();
-  private defaultTTL = 5 * 60 * 1000; // 5 minutes default
+class SimpleCache {
+  private cache = new Map<string, { data: any; expires: number }>();
 
   /**
    * Get data from cache
    * @param key Cache key
    * @returns Cached data or null if expired/not found
    */
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
+  get(key: string): any | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
 
-    if (!entry) {
-      return null;
-    }
-
-    // Check if expired
-    if (Date.now() > entry.expiresAt) {
+    if (Date.now() > item.expires) {
       this.cache.delete(key);
       return null;
     }
 
-    return entry.data as T;
+    return item.data;
   }
 
   /**
    * Set data in cache with optional TTL
    * @param key Cache key
    * @param data Data to cache
-   * @param ttl Time to live in milliseconds (optional)
+   * @param ttl Time to live in seconds (optional, default is 300s)
    */
-  set<T>(key: string, data: T, ttl?: number): void {
-    const expiresAt = Date.now() + (ttl ?? this.defaultTTL);
-    this.cache.set(key, { data, expiresAt });
+  set(key: string, data: any, ttlSeconds: number = 300): void {
+    const expires = Date.now() + ttlSeconds * 1000;
+    this.cache.set(key, { data, expires });
   }
 
   /**
@@ -57,18 +47,7 @@ class MemoryCache {
    */
   clear(): void {
     this.cache.clear();
-  }
-
-  /**
-   * Clean up expired entries
-   */
-  cleanup(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
-      if (now > entry.expiresAt) {
-        this.cache.delete(key);
-      }
-    }
+    console.log('Cache cleared completely');
   }
 
   /**
@@ -76,14 +55,14 @@ class MemoryCache {
    */
   getStats() {
     return {
-      size: this.cache.size,
       keys: Array.from(this.cache.keys()),
+      size: this.cache.size,
     };
   }
 }
 
 // Create a singleton cache instance
-export const cache = new MemoryCache();
+export const cache = new SimpleCache();
 
 // Set up periodic cleanup (every 10 minutes)
 if (typeof window === 'undefined') {

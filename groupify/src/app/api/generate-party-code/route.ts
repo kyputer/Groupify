@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import playlists from '@/db/playlists';
 import { sanitizeInput } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { cache } from '@/lib/cache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,20 @@ export async function POST(request: NextRequest) {
       console.error('Error joining playlist:', joinError);
       // Even if join fails, we created the playlist successfully
     }
+
+    // CRITICAL: Invalidate cache for this user after creating playlist
+    const userCacheKey = `playlists:${session}`;
+    cache.delete(userCacheKey);
+    console.log('Cache invalidated for user:', session);
+
+    // Also invalidate any general playlist cache if it exists
+    const generalCacheKeys = cache
+      .getStats()
+      .keys.filter(key => key.startsWith('playlists:'));
+    generalCacheKeys.forEach(key => {
+      cache.delete(key);
+      console.log('Invalidated cache key:', key);
+    });
 
     return NextResponse.json({
       success: true,

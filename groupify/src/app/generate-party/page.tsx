@@ -78,9 +78,21 @@ export default function Page() {
         dispatch(
           setPartyCodeOwner({
             code: result.code,
-            playlistID: result.playlistID.id,
+            playlistID: result.playlistID.toString(),
           })
         );
+
+        // Force refresh playlists cache by making a request with cache-busting parameter
+        try {
+          await fetch('/api/playlists?refresh=true', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          });
+          console.log('Playlist cache refreshed after party creation');
+        } catch (refreshError) {
+          console.warn('Failed to refresh playlist cache:', refreshError);
+        }
       } else {
         setError(result.error || 'Failed to generate party code');
       }

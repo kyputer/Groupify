@@ -82,22 +82,59 @@ export default function HomePage() {
 
   const handleReset = async () => {
     try {
-      const response = await fetch('/api/reset', {
+      console.log('Starting complete reset...');
+
+      // Clear all browser storage first
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Clear all cookies
+        document.cookie.split(';').forEach(cookie => {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        });
+      }
+
+      // Reset database
+      const response = await fetch('/api/dev-reset', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
+      const responseData = await response.json();
+      console.log('Reset response:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to reset database');
+        throw new Error(
+          responseData.details || responseData.error || 'Failed to reset database'
+        );
       }
 
-      // Clear Redux store completely
+      // Clear Redux store
       dispatch(resetAll());
-      window.location.reload();
+
+      // Clear component state immediately
+      setPlaylists([]);
+      setIsAuthenticated(false);
+      setShowLogin(true);
+
+      console.log('Reset successful, reloading page...');
+
+      // Force hard reload to clear all cached state
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (err) {
       console.error('Error resetting:', err);
-      setError('Failed to reset. Please try again.');
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to reset. Please try again.';
+      setError(errorMessage);
+
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 

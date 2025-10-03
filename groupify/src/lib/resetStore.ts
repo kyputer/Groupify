@@ -9,7 +9,7 @@ export const resetAll = createAction('RESET_ALL');
 export async function resetStore() {
   try {
     // Call the reset API endpoint
-    const response = await fetch('/api/reset', {
+    const response = await fetch('/api/reset-dev', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

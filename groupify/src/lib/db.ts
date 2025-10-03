@@ -21,7 +21,16 @@ const dbConfig = {
 };
 
 // Create pool immediately at module load
-const pool: Pool = mariadb.createPool(dbConfig);
+let pool: Pool = mariadb.createPool(dbConfig);
+
+// Function to recreate the pool (useful after reset)
+export function recreatePool(): void {
+  if (pool) {
+    pool.end().catch(err => console.warn('Error closing old pool:', err));
+  }
+  pool = mariadb.createPool(dbConfig);
+  console.log('Database connection pool recreated');
+}
 
 /**
  * Acquires a database connection from the pool.
@@ -43,26 +52,42 @@ export async function getDBConnection(): Promise<PoolConnection> {
 export async function initializeDatabase(
   force: boolean = false
 ): Promise<void> {
-  logger.log('Manual database initialization triggered');
+  logger.log('Manual database initialization triggered with force:', force);
 
   let conn: PoolConnection | undefined;
   try {
     conn = await getDBConnection();
+    logger.log('Database connection acquired for reset');
 
-    await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    // Use the specific database
     await conn.query(`USE ${dbConfig.database}`);
 
-    // Disable foreign key checks and drop tables
+    // Disable foreign key checks
     await conn.query('SET FOREIGN_KEY_CHECKS=0');
-    await conn.query('DROP TABLE IF EXISTS playlist_tracks');
-    await conn.query('DROP TABLE IF EXISTS playlist_users');
-    await conn.query('DROP TABLE IF EXISTS votes');
-    await conn.query('DROP TABLE IF EXISTS tracks');
-    await conn.query('DROP TABLE IF EXISTS playlists');
-    await conn.query('DROP TABLE IF EXISTS users');
-    await conn.query('SET FOREIGN_KEY_CHECKS=1');
 
-    // Recreate tables
+    // Drop tables in correct order
+    const tablesToDrop = [
+      'playlist_tracks',
+      'playlist_users',
+      'votes',
+      'tracks',
+      'playlists',
+      'users',
+    ];
+
+    for (const table of tablesToDrop) {
+      try {
+        await conn.query(`DROP TABLE IF EXISTS ${table}`);
+        logger.log(`Dropped table: ${table}`);
+      } catch (dropError) {
+        logger.log(`Warning: Could not drop table ${table}:`, dropError);
+      }
+    }
+
+    await conn.query('SET FOREIGN_KEY_CHECKS=1');
+    logger.log('All tables dropped successfully');
+
+    // Recreate all tables with AUTO_INCREMENT reset
     await conn.query(`
       CREATE TABLE users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -73,8 +98,9 @@ export async function initializeDatabase(
         spotify_access_token VARCHAR(512),
         spotify_access_token_expires_at BIGINT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Users table created');
 
     await conn.query(`
       CREATE TABLE tracks (
@@ -95,8 +121,9 @@ export async function initializeDatabase(
         played_at TIMESTAMP DEFAULT NULL,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Tracks table created');
 
     await conn.query(`
       CREATE TABLE playlists (
@@ -109,8 +136,9 @@ export async function initializeDatabase(
         description TEXT DEFAULT NULL,
         open BOOLEAN DEFAULT TRUE,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Playlists table created');
 
     await conn.query(`
       CREATE TABLE votes (
@@ -123,8 +151,9 @@ export async function initializeDatabase(
         FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE,
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         UNIQUE (PlaylistID, TrackID, UserID)
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Votes table created');
 
     await conn.query(`
       CREATE TABLE playlist_tracks (
@@ -134,8 +163,9 @@ export async function initializeDatabase(
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE,
         UNIQUE (PlaylistID, TrackID)
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Playlist_tracks table created');
 
     await conn.query(`
       CREATE TABLE playlist_users (
@@ -146,14 +176,24 @@ export async function initializeDatabase(
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
         UNIQUE (PlaylistID, UserID)
-      )
+      ) AUTO_INCREMENT = 1
     `);
+    logger.log('Playlist_users table created');
 
-    logger.log('Database initialized successfully!');
+    logger.log('All tables recreated with reset AUTO_INCREMENT');
+    logger.log('Database reset completed successfully!');
+
+    // Recreate connection pool to clear any cached connections
+    recreatePool();
   } catch (err) {
-    logger.error('Error initializing database:', err);
-    throw err;
+    logger.error('Error during database reset:', err);
+    throw new Error(
+      `Database reset failed: ${err instanceof Error ? err.message : 'Unknown error'}`
+    );
   } finally {
-    if (conn) await conn.release();
+    if (conn) {
+      await conn.release();
+      logger.log('Database connection released');
+    }
   }
 }

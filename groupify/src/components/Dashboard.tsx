@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'; // No need to import 'react-tabs/style/react-tabs.css' as a module
 import { Playlist } from '../interfaces/Playlist';
 import { Song } from '../interfaces/Song';
@@ -88,7 +88,7 @@ export default function DashboardPage({
         }
 
         // Sort playlists: joined ones first, then by creation date
-        const sortedPlaylists = playlistsData.sort((a: any, b: any) => {
+        const sortedPlaylists = playlistsData.sort((a: Playlist, b: Playlist) => {
           if (a.code === PartyCode && b.code !== PartyCode) return -1;
           if (a.code !== PartyCode && b.code === PartyCode) return 1;
           if (a.isJoined && !b.isJoined) return -1;
@@ -312,11 +312,79 @@ export default function DashboardPage({
     }
   };
 
-  // Find the current playlist object by PlaylistID or PartyCode
-  const currentPlaylist = playlists.find(
-    p => String(p.id) === String(PlaylistID) || p.code === PartyCode
-  );
-  const isPlaylistSelected = !!currentPlaylist;
+  // Find current playlist - prioritize by code first, then by ID
+  const currentPlaylist = useMemo(() => {
+    if (!playlists.length) return null;
+    
+    // First try to find by party code (most reliable)
+    if (PartyCode) {
+      const playlistByCode = playlists.find(p => p.code === PartyCode);
+      if (playlistByCode) {
+        console.log('Found playlist by code:', playlistByCode);
+        return playlistByCode;
+      }
+    }
+    
+    // Fallback to finding by playlist ID
+    if (PlaylistID) {
+      const playlistById = playlists.find(p => String(p.id) === String(PlaylistID));
+      if (playlistById) {
+        console.log('Found playlist by ID:', playlistById);
+        return playlistById;
+      }
+    }
+    
+    console.log('No playlist found for PartyCode:', PartyCode, 'PlaylistID:', PlaylistID);
+    console.log('Available playlists:', playlists.map(p => ({ id: p.id, code: p.code, name: p.name })));
+    return null;
+  }, [playlists, PartyCode, PlaylistID]);
+
+  // Enhanced debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Dashboard Debug:', {
+      PlaylistID,
+      PartyCode,
+      playlistsCount: playlists.length,
+      playlistsLoaded: playlists.length > 0 || isAuthenticated,
+      isAuthenticated,
+      currentPlaylist: currentPlaylist
+        ? { 
+            id: currentPlaylist.id, 
+            code: currentPlaylist.code, 
+            name: currentPlaylist.name,
+            type: typeof currentPlaylist.id 
+          }
+        : 'none',
+      isPlaylistSelected: !!currentPlaylist,
+    });
+  }
+
+  // Check if playlists are still loading
+  const playlistsLoaded = playlists.length > 0 || isAuthenticated;
+  const isPlaylistSelected = !!currentPlaylist && playlistsLoaded;
+
+  // Add more detailed debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Detailed Debug:', {
+      PlaylistID,
+      PartyCode,
+      playlistsCount: playlists.length,
+      allPlaylists: playlists.map(p => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        type: typeof p.id,
+      })),
+      matchAttempts: {
+        byId: playlists.find(p => String(p.id) === String(PlaylistID)),
+        byCode: playlists.find(p => p.code === PartyCode),
+      },
+      currentPlaylist: currentPlaylist,
+      currentPlaylistType: typeof currentPlaylist,
+      currentPlaylistTruthy: !!currentPlaylist,
+      currentPlaylistKeys: currentPlaylist ? Object.keys(currentPlaylist) : null,
+    });
+  }
 
   // Debug logging only in development
   if (process.env.NODE_ENV === 'development') {
@@ -334,6 +402,9 @@ export default function DashboardPage({
   // Add setTabIndex function for Tab navigation
   const [tabIndex, setTabIndex] = useState(0);
 
+  // Determine if user is currently in a party
+  const isInParty = PartyCode && PartyCode.length > 0;
+
   return (
     <div className='dashboard-container bg-white dark:bg-gray-900'>
       <nav className='navbar'>
@@ -341,10 +412,19 @@ export default function DashboardPage({
           <h1 className='logo text-4xl'>Groupify</h1>
         </div>
         <div className='navbar-center'>
+          {/* Enhanced debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className='text-xs text-yellow-400 mb-2'>
+              Debug: PlaylistID={PlaylistID}, PartyCode={PartyCode},{' '}
+              currentPlaylist={currentPlaylist?.name || 'none'},{' '}
+              isSelected={isPlaylistSelected}, loaded={playlistsLoaded}
+            </div>
+          )}
+
           {isPlaylistSelected ? (
             <SearchBar
               UserID={UserID}
-              playlistID={PlaylistID}
+              playlistID={PartyCode || PlaylistID}
               onTrackAdded={refreshHotTracks}
               playlistName={currentPlaylist?.name || ''}
               playlistDescription={currentPlaylist?.description || ''}
@@ -352,7 +432,10 @@ export default function DashboardPage({
             />
           ) : (
             <div className='mt-4 text-red-500'>
-              Please select or join a playlist to add tracks.
+              {playlistsLoaded 
+                ? 'Please select or join a playlist to add tracks.'
+                : 'Loading playlists...'
+              }
             </div>
           )}
         </div>
@@ -370,7 +453,7 @@ export default function DashboardPage({
           className={`${isMobile ? 'fixed right-0 bottom-0 left-0 z-[1000] flex items-center justify-center border-t border-gray-700 bg-gray-900' : 'flex items-center justify-center border-b border-gray-700'}`}
         >
           <Tab
-            style={{ minWidth: '33%' }}
+            style={{ minWidth: isInParty ? '50%' : '33%' }}
             className={`flex flex-col items-center gap-1 py-4 text-center text-xl font-bold text-white transition-colors hover:bg-gray-800 ${isMobile ? '' : 'px-8'}`}
           >
             <svg
@@ -392,7 +475,7 @@ export default function DashboardPage({
             <span className='text-xs'>Dashboard</span>
           </Tab>
           <Tab
-            style={{ minWidth: '33%' }}
+            style={{ minWidth: isInParty ? '50%' : '33%' }}
             className={`flex flex-col items-center gap-1 py-4 text-center text-xl font-bold text-white transition-colors hover:bg-gray-800 ${isMobile ? '' : 'px-8'}`}
           >
             <svg
@@ -412,28 +495,32 @@ export default function DashboardPage({
             </svg>
             <span className='text-xs'>Playlists</span>
           </Tab>
-          <Tab
-            style={{ minWidth: '33%' }}
-            className={`flex flex-col items-center gap-1 py-4 text-center text-xl font-bold text-white transition-colors hover:bg-gray-800 ${isMobile ? '' : 'px-8'}`}
-          >
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              width='24'
-              height='24'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2'
-              strokeLinecap='round'
-              strokeLinejoin='round'
+
+          {/* Only show Join Party tab if user is NOT in a party */}
+          {!isInParty && (
+            <Tab
+              style={{ minWidth: '33%' }}
+              className={`flex flex-col items-center gap-1 py-4 text-center text-xl font-bold text-white transition-colors hover:bg-gray-800 ${isMobile ? '' : 'px-8'}`}
             >
-              <path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'></path>
-              <circle cx='9' cy='7' r='4'></circle>
-              <path d='M23 21v-2a4 4 0 0 0-3-3.87'></path>
-              <path d='M16 3.13a4 4 0 0 1 0 7.75'></path>
-            </svg>
-            <span className='text-xs'>Join Party</span>
-          </Tab>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                width='24'
+                height='24'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'></path>
+                <circle cx='9' cy='7' r='4'></circle>
+                <path d='M23 21v-2a4 4 0 0 0-3-3.87'></path>
+                <path d='M16 3.13a4 4 0 0 1 0 7.75'></path>
+              </svg>
+              <span className='text-xs'>Join Party</span>
+            </Tab>
+          )}
         </TabList>
         <TabPanel className={isMobile ? 'pb-16' : ''}>
           <div className='dashboard-content first-panel'>
@@ -606,11 +693,14 @@ export default function DashboardPage({
             </div>
           </div>
         </TabPanel>
-        <TabPanel className={isMobile ? 'pb-16' : ''}>
-          <div className='dashboard-content'>
-            <Page setTabIndex={setTabIndex} />
-          </div>
-        </TabPanel>
+        {/* Only render Join Party panel if user is NOT in a party */}
+        {!isInParty && (
+          <TabPanel className={isMobile ? 'pb-16' : ''}>
+            <div className='dashboard-content'>
+              <Page setTabIndex={setTabIndex} />
+            </div>
+          </TabPanel>
+        )}
       </Tabs>
     </div>
   );

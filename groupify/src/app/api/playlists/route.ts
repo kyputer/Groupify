@@ -6,49 +6,75 @@ import {
 } from '@/db/playlists';
 import { logger } from '@/lib/logger';
 import { withCache, cache } from '@/lib/cache';
+import { getDBConnection } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
     const session = request.cookies.get('session')?.value;
-    const { searchParams } = new URL(request.url);
-    const forceRefresh = searchParams.get('refresh') === 'true';
+    const url = new URL(request.url);
+    const refresh = url.searchParams.get('refresh') === 'true';
 
-    // Create cache key that includes session to handle user-specific data
-    const cacheKey = `playlists:${session || 'anonymous'}`;
-    const ttl = 2 * 60 * 1000; // 2 minutes cache
+    logger.log('Getting all public playlists, refresh:', refresh);
 
-    // If force refresh is requested, delete the cache first
-    if (forceRefresh) {
-      cache.delete(cacheKey);
+    if (!session) {
+      logger.log('No session found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const playlists = await withCache(cacheKey, ttl, async () => {
-      logger.log('Getting all public playlists');
-      const publicPlaylists = await getAllPublicPlaylists();
+    const cacheKey = `playlists:${session}`;
 
-      if (session) {
-        logger.log('Session value:', session);
-        const userPlaylists = await getUserPlaylists(session);
-        logger.log('User playlists:', userPlaylists);
+    // Force cache invalidation if refresh is requested
+    if (refresh) {
+      cache.delete(cacheKey);
+      logger.log('Cache manually refreshed for user:', session);
+    }
 
-        for (const playlist of userPlaylists) {
-          const index = publicPlaylists.findIndex(p => p.id === playlist.id);
-          if (index !== -1) {
-            publicPlaylists[index].isJoined = true;
-          } else {
-            publicPlaylists.push(playlist);
-          }
-        }
-      }
-
-      publicPlaylists.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    // Check if this is a fresh request after reset by checking if any playlists exist at all
+    let conn;
+    try {
+      conn = await getDBConnection();
+      const playlistCount = await conn.query(
+        'SELECT COUNT(*) as count FROM playlists WHERE open = 1'
       );
-      return publicPlaylists;
+
+      if (playlistCount[0].count === 0) {
+        // Database is empty, clear cache and return empty array
+        cache.delete(cacheKey);
+        logger.log('Database is empty after reset, returning empty playlists');
+        return NextResponse.json([]);
+      }
+    } finally {
+      if (conn) await conn.release();
+    }
+
+    // Try cache first (unless refresh was requested)
+    if (!refresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        logger.log('Returning cached playlists');
+        return NextResponse.json(cached);
+      }
+    }
+
+    logger.log('Session value:', session);
+    const userPlaylists = await getUserPlaylists(session);
+    const publicPlaylists = await getAllPublicPlaylists();
+
+    // Combine and deduplicate
+    const allPlaylists = [...userPlaylists];
+    publicPlaylists.forEach(playlist => {
+      if (!allPlaylists.some(p => p.id === playlist.id)) {
+        allPlaylists.push(playlist);
+      }
     });
 
-    return NextResponse.json(playlists);
+    logger.log('Found playlists:', allPlaylists.length);
+    logger.log('User playlists:', userPlaylists);
+
+    // Cache the result
+    cache.set(cacheKey, allPlaylists, 300); // 5 minutes
+
+    return NextResponse.json(allPlaylists);
   } catch (error) {
     logger.error('Error fetching playlists:', error);
     return NextResponse.json(

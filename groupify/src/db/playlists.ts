@@ -5,6 +5,17 @@ import { getSpotifyTokensForUser } from '@/lib/spotifyTokens';
 import { getTrackDetails } from '@/lib/spotify';
 import { generateCode } from '@/lib/utils';
 
+// Fix the type - PlaylistID should be number to match interface
+type PlaylistRow = {
+  PlaylistID: number; // Changed from string to number
+  name: string;
+  code: string;
+  created_at: string;
+  created_by: string;
+  is_public: number;
+  description: string;
+};
+
 // const playlists = {
 //   createPlaylist,
 //   getAllPublicPlaylists,
@@ -115,8 +126,8 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
       AND open = 1
       ORDER BY created_at DESC`);
 
-    return rows.map((row: any) => ({
-      id: row.PlaylistID,
+    return rows.map((row: PlaylistRow) => ({
+      id: Number(row.PlaylistID), // Ensure it's a number
       name: row.name,
       code: row.code,
       createdAt: row.created_at,
@@ -148,8 +159,8 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
 
     console.log('Found playlists:', rows.length);
 
-    return rows.map((row: any) => ({
-      id: row.PlaylistID,
+    return rows.map((row: PlaylistRow) => ({
+      id: Number(row.PlaylistID), // Ensure it's a number
       name: row.name,
       code: row.code,
       createdAt: row.created_at,
@@ -289,7 +300,6 @@ export async function joinPlaylistWithID(
   const conn = await getDBConnection();
   try {
     // Check if the user exists
-
     const userCheck = await conn.query('SELECT id FROM users WHERE id = ?', [
       userID,
     ]);
@@ -297,13 +307,14 @@ export async function joinPlaylistWithID(
       throw new Error(`User with ID ${userID} does not exist.`);
     }
     console.log('User exists');
-    // Check if the playlist exists
+
+    // Check if the playlist exists BY ID, not by code
     const codeCheck = await conn.query(
-      'SELECT code FROM playlists WHERE PlaylistID = ?',
+      'SELECT code FROM playlists WHERE PlaylistID = ?', // This was correct
       [playlistID]
     );
     if (codeCheck.length === 0) {
-      throw new Error(`Playlist with code ${playlistID} does not exist.`);
+      throw new Error(`Playlist with ID ${playlistID} does not exist.`); // Fixed error message
     }
 
     // Check if the playlist is open
@@ -312,31 +323,32 @@ export async function joinPlaylistWithID(
       [playlistID]
     );
     if (openCheck[0].open === 0) {
-      throw new Error(`Playlist with code ${playlistID} is not open.`);
+      throw new Error(`Playlist with ID ${playlistID} is closed.`);
+    }
+    console.log('Playlist exists');
+
+    // Check if user is already in the playlist
+    const userInPlaylist = await conn.query(
+      'SELECT * FROM playlist_users WHERE PlaylistID = ? AND UserID = ?',
+      [playlistID, userID]
+    );
+    if (userInPlaylist.length > 0) {
+      console.log('User is already in playlist');
+      return codeCheck[0].code; // Return the code
     }
 
-    console.log('Playlist exists');
-    // Check if the user is already in the playlist
-    const joinCheck = await conn.query(
-      'SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?',
-      [userID, playlistID]
-    );
-    if (joinCheck.length > 0) {
-      console.log('User is already in playlist');
-      await conn.query(
-        'UPDATE playlist_users SET Joined = TRUE WHERE PlaylistUserID = ?',
-        [joinCheck[0].PlaylistUserID]
-      );
-      return codeCheck[0].code;
-    }
-    console.log('User is not in playlist');
+    // Join the playlist
     await conn.query(
-      `INSERT INTO playlist_users (PlaylistID, UserID)
-      VALUES (?, ?)`,
+      'INSERT INTO playlist_users (PlaylistID, UserID, Joined) VALUES (?, ?, TRUE)',
       [playlistID, userID]
+    );
+
+    console.log(
+      `User ${userID} successfully joined playlist ${playlistID} with code ${codeCheck[0].code}`
     );
     return codeCheck[0].code;
   } catch (error) {
+    console.error('Error joining playlist:', error);
     throw error;
   } finally {
     conn.release();
