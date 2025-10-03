@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useDispatch } from 'react-redux';
-import { resetAll } from '@/lib/actions';
-import Link from 'next/link';
 import LoginForm from '@/components/LoginForm';
 import SignupForm from '@/components/SignupForm';
+import { resetAll } from '@/lib/actions';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RainbowButton } from '@/components/RainbowButton';
 
 interface Playlist {
@@ -26,66 +25,58 @@ export default function HomePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndFetchData = async () => {
       try {
-        const response = await fetch('/api/auth/check', {
+        // 1. Check authentication
+        const authResponse = await fetch('/api/auth/check', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Include cookies for session management
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-        const data = await response.json();
-        
-        if (!response.ok || !data.authenticated) {
+
+        const authData = await authResponse.json();
+
+        if (!authResponse.ok || !authData.authenticated) {
           setIsAuthenticated(false);
           setShowLogin(true);
         } else {
           setIsAuthenticated(true);
-          console.log('User authenticated:', data.user);
+          console.log('User authenticated:', authData.user);
+
+          // 2. Fetch playlists if authenticated
+          const playlistsResponse = await fetch('/api/playlists', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          });
+
+          if (playlistsResponse.ok) {
+            const playlistsData = await playlistsResponse.json();
+            console.log('Fetched playlists:', playlistsData);
+            setPlaylists(playlistsData);
+          } else {
+            console.warn('Failed to fetch playlists');
+            setPlaylists([]);
+          }
         }
+
         setIsLoading(false);
       } catch (err) {
         console.error('Auth check failed:', err);
         setIsAuthenticated(false);
         setShowLogin(true);
+        setIsLoading(false);
       }
     };
 
-    const fetchPlaylists = async () => {
-      try {
-        const response = await fetch('/api/playlists', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Include cookies for session management
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch playlists');
-        }
-        const data = await response.json();
-        console.log('Fetched playlists:', data);
-        setPlaylists(data);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load playlists.');
-      }
-    };
-
-    checkAuth().then(() => {
-      if (!isLoading) {
-        fetchPlaylists();
-      }
-    });
-  }, [router, isLoading]);
+    checkAuthAndFetchData();
+  }, []);
 
   const handleJoinPlaylist = (playlistId: string) => {
-    if(!playlistId) {
+    if (!playlistId) {
       console.error('Playlist ID is undefined or null');
       return;
     }
-
     router.push(`/join-party?playlistId=${playlistId}`);
   };
 
@@ -93,16 +84,15 @@ export default function HomePage() {
     try {
       const response = await fetch('/api/reset', {
         method: 'POST',
-        credentials: 'include', // Include cookies for session management
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
         throw new Error('Failed to reset database');
       }
 
+      // Clear Redux store completely
       dispatch(resetAll());
       window.location.reload();
     } catch (err) {
@@ -113,58 +103,81 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="landing-container flex flex-col items-center justify-center h-screen">
-        <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
-        <h2 className="text-3xl font-bold mb-6 text-center">Loading...</h2>
+      <div className='landing-container flex h-screen flex-col items-center justify-center'>
+        <h1 className='logo mb-4 text-9xl font-bold'>Groupify</h1>
+        <h2 className='mb-6 text-center text-3xl font-bold'>Loading...</h2>
       </div>
     );
   }
 
   return (
-    <div className="landing-container flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-9xl font-bold mb-4 logo">Groupify</h1>
-      
+    <div className='landing-container flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
+      <h1 className='logo mb-4 text-9xl font-bold'>Groupify</h1>
+
       {!isAuthenticated ? (
-        <div className="w-full max-w-md">
+        <div className='w-full max-w-md'>
           {showLogin ? (
-            <LoginForm setShowLogin={setShowLogin} username={username} setUsername={setUsername} setPassword={setPassword} password={password}/>
+            <LoginForm
+              setShowLogin={setShowLogin}
+              username={username}
+              setUsername={setUsername}
+              setPassword={setPassword}
+              password={password}
+            />
           ) : (
-            <SignupForm setShowLogin={setShowLogin} username={username} setUsername={setUsername} setPassword={setPassword} password={password}/>
+            <SignupForm
+              setShowLogin={setShowLogin}
+              username={username}
+              setUsername={setUsername}
+              setPassword={setPassword}
+              password={password}
+            />
           )}
         </div>
       ) : (
-        <div className="w-full max-w-md mt-12">
-          <div className="playlists-container flex flex-col items-center mb-6">
-            {playlists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className="playlist-item mb-4 p-4 rounded-md w-full border-2 border-gray-300 flex justify-between items-center"
-              >
-                <span className="text-lg font-medium">{playlist.name}</span>
-                <button
-                  className="bg-[#FF6B6B] text-white px-4 py-2 rounded-md hover:bg-[#fd4343] transition-colors"
-                  onClick={() => handleJoinPlaylist(playlist.id)}
+        <div className='mt-12 w-full max-w-md'>
+          <div className='playlists-container mb-6 flex flex-col items-center'>
+            {playlists.length > 0 ? (
+              playlists.map(playlist => (
+                <div
+                  key={playlist.id}
+                  className='playlist-item mb-4 flex w-full items-center justify-between rounded-md border-2 border-gray-300 p-4'
                 >
-                  Join
-                </button>
+                  <span className='text-lg font-medium'>{playlist.name}</span>
+                  <button
+                    className='rounded-md bg-[#FF6B6B] px-4 py-2 text-white transition-colors hover:bg-[#fd4343]'
+                    onClick={() => handleJoinPlaylist(playlist.id)}
+                  >
+                    Join
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className='text-center text-gray-500'>
+                No playlists available. Create one to get started!
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
-      
-      {error && <p className="error text-red-500 text-center mb-4">{error}</p>}
-      
+
+      {error && <p className='error mb-4 text-center text-red-500'>{error}</p>}
+
       {process.env.NODE_ENV === 'development' && (
         <button
-          className="bg-red-500 text-white px-6 py-3 rounded-md hover:bg-red-600"
+          className='rounded-md bg-red-500 px-6 py-3 text-white hover:bg-red-600'
           onClick={handleReset}
         >
           Reset Store & Database
         </button>
       )}
+
       {isAuthenticated && (
-        <RainbowButton text="Start a party!" href="/generate-party" className="mt-4" />
+        <RainbowButton
+          text='Start a party!'
+          href='/generate-party'
+          className='mt-4'
+        />
       )}
     </div>
   );

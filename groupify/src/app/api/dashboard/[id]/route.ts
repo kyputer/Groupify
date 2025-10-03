@@ -1,78 +1,160 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Song } from '@/interfaces/Song';
 import { Vote } from '@/interfaces/Vote';
-import tracks from '@/db/tracks';
 import { getPlaylistID } from '@/db/playlists';
 import { logger } from '@/lib/logger';
+import { getDBConnection } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let conn;
   try {
     const { id } = await params;
     const session = request.cookies.get('session')?.value;
-    
+
     logger.log('Dashboard API called with id:', id);
-    logger.log('Session:', session);
-    
+
     if (!session) {
-      logger.log('No session found');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Return empty dashboard if no ID is provided
     if (!id) {
-      logger.log('No ID provided');
       return NextResponse.json({
         PlayedJson: [] as Song[],
         HotJson: [] as Song[],
         HotVotes: [] as Vote[],
-        UserID: session
+        UserID: session,
       });
     }
 
-    // The id parameter is now a code instead of the actual playlist ID
     const playlistID = await getPlaylistID(id);
-    logger.log('Playlist ID from code:', playlistID);
-    
     if (!playlistID) {
-      logger.log(`No playlist found for code: ${id}`);
       return NextResponse.json({
         PlayedJson: [] as Song[],
         HotJson: [] as Song[],
         HotVotes: [] as Vote[],
-        UserID: session
+        UserID: session,
       });
     }
 
-    logger.log("Fetching dashboard data for playlist code:", id);
-    logger.log("Calling getHot with UserID:", session, "PlaylistID:", playlistID.toString());
-    const hotSongs = await tracks.getHot(session, playlistID.toString());
-    logger.log("Hot songs returned:", hotSongs);
+    // Single optimized connection for all queries
+    conn = await getDBConnection();
 
-    logger.log("Fetching played songs for playlist code:", id);
-    const playedSongs = await tracks.getPlayed(session, playlistID.toString());
-    logger.log("Played songs returned:", playedSongs);
+    // Fixed SQL query - DISTINCT must come immediately after SELECT
+    const allTracks = await conn.query(
+      `
+      (
+        SELECT DISTINCT
+          'hot' as track_type,
+          t.SpotifyID,
+          t.title,
+          t.artist,
+          t.url,
+          t.image,
+          t.votes,
+          t.duration_ms,
+          t.explicit,
+          v.VoteType as Selected,
+          COALESCE(SUM(CASE 
+            WHEN v2.VoteType = 'upvote' THEN 1 
+            WHEN v2.VoteType = 'downvote' THEN -1 
+            ELSE 0 
+          END), 0) as vote_count
+        FROM tracks t 
+         INNER JOIN playlist_tracks pt ON pt.TrackID = t.SpotifyID
+         LEFT JOIN votes v ON v.TrackID = t.SpotifyID AND v.UserID = ? AND v.PlaylistID = ?
+         LEFT JOIN votes v2 ON v2.TrackID = t.SpotifyID AND v2.PlaylistID = ?
+        WHERE 
+         pt.PlaylistID = ?
+         AND (t.queue_at IS NULL OR t.queued = 0)
+         AND (t.blacklist = 0 OR t.blacklist IS NULL)
+        GROUP BY t.SpotifyID, t.title, t.artist, t.url, t.image, t.votes, t.duration_ms, t.explicit, v.VoteType
+        ORDER BY vote_count DESC
+      )
+      UNION ALL
+      (
+        SELECT 
+          'played' as track_type,
+          t.SpotifyID,
+          t.title,
+          t.artist,
+          t.url,
+          t.image,
+          t.votes,
+          t.duration_ms,
+          t.explicit,
+          NULL as Selected,
+          0 as vote_count
+        FROM tracks t 
+         INNER JOIN playlist_tracks pt ON pt.TrackID = t.SpotifyID
+        WHERE 
+         pt.PlaylistID = ?
+         AND t.queue_at IS NOT NULL
+         AND t.queued = 1
+        ORDER BY t.queue_at ASC
+      )
+    `,
+      [session, playlistID, playlistID, playlistID, playlistID]
+    );
 
-    // Transform hot songs into the expected format
+    // Separate hot and played tracks
+    const hotTracks = allTracks.filter(row => row.track_type === 'hot');
+    const playedTracks = allTracks.filter(row => row.track_type === 'played');
+
+    // Transform to expected format
+    const hotSongs = hotTracks.map(row => ({
+      id: row.SpotifyID,
+      name: row.title,
+      artists: [{ name: row.artist }],
+      external_urls: { spotify: row.url },
+      image: row.image,
+      album: {
+        id: row.SpotifyID,
+        name: row.title,
+        images: [{ url: row.image }],
+      },
+      duration_ms: row.duration_ms,
+      explicit: row.explicit,
+      preview_url: null,
+      popularity: 0,
+      Votes: row.vote_count || 0,
+      Selected: row.Selected || null,
+    }));
+
+    const playedSongs = playedTracks.map(row => ({
+      id: row.SpotifyID,
+      name: row.title,
+      artists: [{ name: row.artist }],
+      external_urls: { spotify: row.url },
+      image: row.image,
+      album: {
+        id: row.SpotifyID,
+        name: row.title,
+        images: [{ url: row.image }],
+      },
+      duration_ms: row.duration_ms,
+      explicit: row.explicit,
+      preview_url: null,
+      popularity: 0,
+      Votes: 0,
+      Selected: null,
+    }));
+
     const hotVotes = hotSongs.map(song => ({
       SongID: song.id,
       Votes: song.Votes || 0,
-      Selected: song.Selected || null
+      Selected: song.Selected || null,
     }));
 
     const data = {
       PlayedJson: playedSongs,
       HotJson: hotSongs,
       HotVotes: hotVotes,
-      UserID: session
+      UserID: session,
     };
 
-    logger.log("Returning dashboard data:", data);
     return NextResponse.json(data);
   } catch (error) {
     logger.error('Error fetching dashboard data:', error);
@@ -80,5 +162,7 @@ export async function GET(
       { error: 'Failed to fetch dashboard data' },
       { status: 500 }
     );
+  } finally {
+    if (conn) await conn.release();
   }
-} 
+}

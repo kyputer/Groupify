@@ -33,18 +33,34 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       logger.warn('User not authenticated');
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      );
     }
 
     /* Validate required fields - Currently missing:
      vars(in raw requests) - playlist name, code, description 
      check debugging logs.
      */
-    if (!playlistCode || !trackId || !name || !description || typeof isPublic === 'undefined') {
+    if (
+      !playlistCode ||
+      !trackId ||
+      !name ||
+      !description ||
+      typeof isPublic === 'undefined'
+    ) {
       logger.warn('Missing required playlist fields', {
-        playlistCode, trackId, name, isPublic, description
+        playlistCode,
+        trackId,
+        name,
+        isPublic,
+        description,
       });
-      return NextResponse.json({ error: 'Missing required playlist fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required playlist fields' },
+        { status: 400 }
+      );
     }
 
     // Add track and ensure playlist exists
@@ -54,12 +70,15 @@ export async function POST(request: NextRequest) {
       name,
       createdBy: userId,
       isPublic,
-      description
+      description,
     });
 
     return NextResponse.json(result);
   } catch (error) {
     logger.error('Error adding track to playlist:', error);
-    return NextResponse.json({ error: 'Failed to add track to playlist' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to add track to playlist' },
+      { status: 500 }
+    );
   }
 }

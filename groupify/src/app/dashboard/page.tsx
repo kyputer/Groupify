@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import Dashboard from '@/components/Dashboard';
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -12,8 +12,12 @@ import { logger } from '@/lib/logger';
 export default function Page() {
   const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
-  const playlistID = useSelector((state: RootState) => state.party.playlistID ?? '');
-  const partyCode = useSelector((state: RootState) => state.party.selectedPartyCode);
+  const playlistID = useSelector(
+    (state: RootState) => state.party.playlistID ?? ''
+  );
+  const partyCode = useSelector(
+    (state: RootState) => state.party.selectedPartyCode
+  );
   const isOwner = useSelector((state: RootState) => state.party.isOwner);
   const searchParams = useSearchParams();
   const [data, setData] = useState<{
@@ -22,19 +26,27 @@ export default function Page() {
     HotVotes: Vote[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const handlePartyJoin = async (newPartyCode: string, newPlaylistId: string) => {
-    const isOwner = await fetch(`/api/playlist-owner?code=${encodeURIComponent(newPartyCode)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include'
-    });
+  const handlePartyJoin = async (
+    newPartyCode: string,
+    newPlaylistId: string
+  ) => {
+    const isOwner = await fetch(
+      `/api/playlist-owner?code=${encodeURIComponent(newPartyCode)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      }
+    );
     const ownerResponse = await isOwner.json();
     if (ownerResponse.isOwner) {
-      dispatch(setPartyCodeOwner({code: newPartyCode, playlistID: newPlaylistId}));
+      dispatch(
+        setPartyCodeOwner({ code: newPartyCode, playlistID: newPlaylistId })
+      );
     } else {
-      dispatch(setPartyCode({code: newPartyCode, playlistID: newPlaylistId}));
+      dispatch(setPartyCode({ code: newPartyCode, playlistID: newPlaylistId }));
     }
   };
 
@@ -48,7 +60,7 @@ export default function Page() {
           setData({
             PlayedJson: [],
             HotJson: [],
-            HotVotes: []
+            HotVotes: [],
           });
           return;
         }
@@ -57,9 +69,9 @@ export default function Page() {
         const response = await fetch(`/api/dashboard/${encodedCode}`, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          credentials: 'include'
+          credentials: 'include',
         });
 
         if (!response.ok) {
@@ -71,38 +83,71 @@ export default function Page() {
         setData(dashboardData);
 
         // Update Redux state with the code from URL if it exists
-        if (searchParams?.get('code') && searchParams.get('code') !== partyCode) {
+        if (
+          searchParams?.get('code') &&
+          searchParams.get('code') !== partyCode
+        ) {
           // Only fetch playlists if we don't already have the correct playlist ID in Redux
           if (!playlistID) {
             try {
               const playlistsResponse = await fetch('/api/playlists', {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
+                credentials: 'include',
               });
               if (playlistsResponse.ok) {
                 const playlistsData = await playlistsResponse.json();
-                const currentPlaylist = playlistsData.find((p: {id: number, code: string}) => p.code === searchParams.get('code'));
+                const currentPlaylist = playlistsData.find(
+                  (p: { id: number; code: string }) =>
+                    p.code === searchParams.get('code')
+                );
                 if (currentPlaylist) {
-                  dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: currentPlaylist.id.toString()}));
+                  dispatch(
+                    setPartyCode({
+                      code: searchParams.get('code')!,
+                      playlistID: currentPlaylist.id.toString(),
+                    })
+                  );
                 } else {
-                  dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+                  dispatch(
+                    setPartyCode({
+                      code: searchParams.get('code')!,
+                      playlistID: '',
+                    })
+                  );
                 }
               } else {
-                dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+                dispatch(
+                  setPartyCode({
+                    code: searchParams.get('code')!,
+                    playlistID: '',
+                  })
+                );
               }
             } catch (err) {
               logger.error('Error fetching playlist for Redux state:', err);
-              dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: ''}));
+              dispatch(
+                setPartyCode({
+                  code: searchParams.get('code')!,
+                  playlistID: '',
+                })
+              );
             }
           } else {
             // We already have playlist ID, just update the code
-            dispatch(setPartyCode({code: searchParams.get('code')!, playlistID: playlistID}));
+            dispatch(
+              setPartyCode({
+                code: searchParams.get('code')!,
+                playlistID: playlistID,
+              })
+            );
           }
         }
       } catch (err) {
         logger.error('Error fetching dashboard data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load dashboard data'
+        );
       }
     };
 
@@ -112,16 +157,24 @@ export default function Page() {
   }, [userId, partyCode, searchParams, dispatch, playlistID]);
 
   if (error) {
-    return <div className="flex items-center justify-center h-screen text-red-500">{error}</div>;
+    return (
+      <div className='flex h-screen items-center justify-center text-red-500'>
+        {error}
+      </div>
+    );
   }
 
   if (!data) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className='flex h-screen items-center justify-center'>
+        Loading...
+      </div>
+    );
   }
 
   return (
     <div>
-      <Dashboard 
+      <Dashboard
         PlayedJson={data.PlayedJson}
         HotJson={data.HotJson}
         HotVotes={data.HotVotes}

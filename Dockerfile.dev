@@ -34,25 +34,25 @@ COPY groupify ./groupify
 # --- Final image ---
 FROM node:20-bullseye
 
-# small tool and DB client needed at runtime (optional)
+# Install only system packages via apt-get (remove wait-port from here)
 RUN apt-get update && apt-get install -y mariadb-client && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app/groupify
 
-# Copy only package files first for better caching
+# Copy package files first (better Docker layer caching)
 COPY groupify/package*.json ./
 
-# Use CI for reproducible installs if lockfile present; fallback to npm install
-ENV NPM_CONFIG_AUDIT=false NPM_CONFIG_FUND=false
+# Install dependencies including wait-port via npm
+ENV NPM_CONFIG_AUDIT=false NPM_CONFIG_FUND=false NPM_CONFIG_PROGRESS=false
 RUN if [ -f package-lock.json ]; then npm ci --silent; else npm install --silent; fi
+
+# Install wait-port globally via npm (not apt-get)
+RUN npm install -g wait-port
 
 # Copy app source
 COPY groupify ./
 
-# Install small helper(s) used by the start command
-RUN npm install -g wait-port nodemon
-
 EXPOSE 3000
 
-# Wait for DB then start dev server (adjust command if using production start)
-CMD ["sh", "-c", "npx wait-port db:3306 --strict && npm run dev"]
+# Wait for DB then start dev server
+CMD ["sh", "-c", "wait-port db:3306 && npm run dev"]

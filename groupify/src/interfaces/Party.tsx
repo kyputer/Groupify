@@ -1,6 +1,6 @@
 export interface Party {
-    id: number;
-    name: string;
-    owner: string;
-    code: string;
+  id: number;
+  name: string;
+  owner: string;
+  code: string;
 }

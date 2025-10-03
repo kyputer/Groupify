@@ -29,5 +29,5 @@ export const logger = {
     if (isDev) {
       console.info(...args);
     }
-  }
+  },
 };

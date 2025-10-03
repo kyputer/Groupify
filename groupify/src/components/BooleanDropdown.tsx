@@ -15,22 +15,24 @@ export const BooleanDropdown: React.FC<BooleanDropdownProps> = ({
   onChange,
   label,
   className = '',
-  labelPosition = 'top'
+  labelPosition = 'top',
 }) => {
   const containerClasses = {
     top: 'flex flex-col gap-2',
     left: 'flex items-center gap-2',
-    right: 'flex items-center gap-2 flex-row-reverse'
+    right: 'flex items-center gap-2 flex-row-reverse',
   };
   return (
-    <div className={`${containerClasses[labelPosition as keyof typeof containerClasses]} ${className} pt-6 pb-6`}>
-      {label && <label className="text-sm font-medium">{label}</label>}
+    <div
+      className={`${containerClasses[labelPosition as keyof typeof containerClasses]} ${className} pt-6 pb-6`}
+    >
+      {label && <label className='text-sm font-medium'>{label}</label>}
       <select
         value={value.toString()}
-        onChange={(e) => onChange(e.target.value === 'true')}
-        className="p-2 border rounded-md"
+        onChange={e => onChange(e.target.value === 'true')}
+        className='rounded-md border p-2'
       >
-        {options.map((option) => (
+        {options.map(option => (
           <option key={option.value.toString()} value={option.value.toString()}>
             {option.label}
           </option>
@@ -38,4 +40,4 @@ export const BooleanDropdown: React.FC<BooleanDropdownProps> = ({
       </select>
     </div>
   );
-}; 
+};

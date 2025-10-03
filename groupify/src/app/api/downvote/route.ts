@@ -9,12 +9,9 @@ export async function POST(request: NextRequest) {
     const session = request.cookies.get('session')?.value;
     if (!session) {
       logger.log('No session found');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if ( !SpotifyID) {
+    if (!SpotifyID) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -32,9 +29,9 @@ export async function POST(request: NextRequest) {
     // Create a track object with the minimum required properties
     const track = {
       id: SpotifyID,
-      name: '',  // These will be filled in by the tracks.downvote function
+      name: '', // These will be filled in by the tracks.downvote function
       artists: [{ name: '' }],
-      href: ''
+      href: '',
     };
 
     const result = await tracks.downvote(track, parseInt(session), playlistID);
@@ -48,4 +45,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

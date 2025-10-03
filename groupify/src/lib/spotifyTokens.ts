@@ -15,12 +15,7 @@ export async function saveSpotifyTokensForUser(
         spotify_refresh_token = ?, 
         spotify_access_token_expires_at = ?
       WHERE id = ?`,
-      [
-        accessToken,
-        refreshToken,
-        Date.now() + expiresIn * 1000,
-        userId
-      ]
+      [accessToken, refreshToken, Date.now() + expiresIn * 1000, userId]
     );
   } finally {
     await conn.release();
@@ -29,9 +24,9 @@ export async function saveSpotifyTokensForUser(
 
 // Retrieve tokens for a user
 export async function getSpotifyTokensForUser(userId: number): Promise<{
-  accessToken: string | null,
-  refreshToken: string | null,
-  expiresAt: number | null
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresAt: number | null;
 }> {
   const conn = await getDBConnection();
   try {
@@ -46,7 +41,7 @@ export async function getSpotifyTokensForUser(userId: number): Promise<{
     return {
       accessToken: rows[0].spotify_access_token,
       refreshToken: rows[0].spotify_refresh_token,
-      expiresAt: rows[0].spotify_access_token_expires_at
+      expiresAt: rows[0].spotify_access_token_expires_at,
     };
   } finally {
     await conn.release();

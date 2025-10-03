@@ -3,8 +3,8 @@ import { resetAll } from '../actions';
 
 interface PartyState {
   selectedPartyCode: string;
-  isOwner: boolean; 
-  isJoined: boolean; 
+  isOwner: boolean;
+  isJoined: boolean;
   timestamp: number | null;
   playlistID: string;
 }
@@ -14,7 +14,7 @@ const initialState: PartyState = {
   isOwner: false,
   isJoined: false,
   timestamp: null,
-  playlistID: ''
+  playlistID: '',
 };
 
 export const partySlice = createSlice({
@@ -48,10 +48,16 @@ export const partySlice = createSlice({
       return initialState;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder.addCase(resetAll, () => initialState);
   },
 });
 
-export const { setPartyCodeOwner, setPartyCode, selectPartyCode, clearPartyCode, clearAllPartyCode } = partySlice.actions;
-export default partySlice.reducer; 
+export const {
+  setPartyCodeOwner,
+  setPartyCode,
+  selectPartyCode,
+  clearPartyCode,
+  clearAllPartyCode,
+} = partySlice.actions;
+export default partySlice.reducer;

@@ -8,8 +8,8 @@ export async function POST(request: Request) {
     if (!query || query.length < 2) {
       return NextResponse.json([]);
     }
-    
-    console.log('Query: ', query)
+
+    console.log('Query: ', query);
     // In production, send search request to the backend
     const response = await searchTracks(query);
 

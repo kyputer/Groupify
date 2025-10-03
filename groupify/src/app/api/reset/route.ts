@@ -1,33 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { initializeDatabase } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Only allow reset in development environment
-    if (process.env.NODE_ENV !== 'development') {
-      return NextResponse.json(
-        { error: 'Reset only allowed in development environment' },
-        { status: 403 }
-      );
+    const session = request.cookies.get('session')?.value;
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Force database reinitialization
+    logger.log('Reset database requested by session:', session);
+
+    // Force database re-initialization (drops and recreates all tables)
     await initializeDatabase(true);
 
-    // Clear session cookie
-    const response = NextResponse.json({ 
-      success: true, 
-      message: 'Database reset successful' 
+    logger.log('Database reset completed successfully');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Database reset successfully',
     });
-    
-    response.cookies.set('session', '', { maxAge: 0 });
-    
-    return response;
   } catch (error) {
-    console.error('Error resetting database:', error);
+    logger.error('Error resetting database:', error);
     return NextResponse.json(
       { error: 'Failed to reset database' },
       { status: 500 }
     );
   }
-} 
+}

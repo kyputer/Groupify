@@ -19,17 +19,17 @@ class MemoryCache {
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
-    
+
     // Check if expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.data as T;
   }
 
@@ -77,7 +77,7 @@ class MemoryCache {
   getStats() {
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys())
+      keys: Array.from(this.cache.keys()),
     };
   }
 }
@@ -88,9 +88,12 @@ export const cache = new MemoryCache();
 // Set up periodic cleanup (every 10 minutes)
 if (typeof window === 'undefined') {
   // Only run cleanup on server-side
-  setInterval(() => {
-    cache.cleanup();
-  }, 10 * 60 * 1000);
+  setInterval(
+    () => {
+      cache.cleanup();
+    },
+    10 * 60 * 1000
+  );
 }
 
 /**
@@ -114,6 +117,6 @@ export async function withCache<T>(
   // Cache miss, fetch fresh data
   const data = await fetchFn();
   cache.set(key, data, ttl);
-  
+
   return data;
 }

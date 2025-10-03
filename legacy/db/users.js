@@ -59,7 +59,7 @@ async function findById(id) {
         console.error("Database error:", err);
         throw err;
     } finally {
-        if (conn) {
+        if (conn) await conn.release();
             try {
                 console.log('Releasing database connection');
                 await conn.release();
@@ -84,7 +84,7 @@ async function findByUsername(username) {
         console.error("Database error:", err);
         throw err;
     } finally {
-        if (conn) {
+        if (conn) await conn.release();
             try {
                 await conn.release();
             } catch (releaseErr) {

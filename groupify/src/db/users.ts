@@ -4,38 +4,38 @@ import bcrypt from 'bcryptjs';
 export async function findByUsername(username: string) {
   const conn = await getDBConnection();
   try {
-    const rows = await conn.query('SELECT * FROM users WHERE username = ?', [username]);
+    const rows = await conn.query('SELECT * FROM users WHERE username = ?', [
+      username,
+    ]);
     return rows[0];
   } catch (err) {
     console.error('Database error:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
-export async function findById(id: string) {
-  const conn = await getDBConnection();
+export async function findById(userId: string): Promise<any | null> {
+  let conn;
   try {
-    const rows = await conn.query('SELECT * FROM users WHERE id = ?', [id]);
-    return rows[0];
-  } catch (err) {
-    console.error('Database error:', err);
-    throw err;
-  } finally {
-    if (conn) {
-      try {
-        await conn.release();
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
+    conn = await getDBConnection();
+    // Ensure proper type conversion: string session ID -> number for database
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+      console.error('Invalid user ID format:', userId);
+      return null;
     }
+
+    const rows = await conn.query('SELECT * FROM users WHERE id = ?', [
+      numericUserId,
+    ]);
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    console.error('Database error in findById:', err);
+    return null;
+  } finally {
+    if (conn) await conn.release();
   }
 }
 
@@ -52,12 +52,6 @@ export async function register(username: string, password: string) {
     console.error('Database error:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }

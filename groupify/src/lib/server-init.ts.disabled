@@ -1,0 +1,15 @@
+import { initializeDatabase } from '@/lib/db';
+
+// Initialize database on server startup
+if (typeof window === 'undefined') {
+  // Only run on server side
+  initializeDatabase()
+    .then(() => {
+      console.log('Database initialization completed on server startup.');
+    })
+    .catch(error => {
+      console.error('Failed to initialize database on server startup:', error);
+    });
+}
+
+export {}; // Make this a module

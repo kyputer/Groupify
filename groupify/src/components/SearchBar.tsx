@@ -1,4 +1,4 @@
-'use client' 
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
 import { formatDuration } from '@/lib/utils';
@@ -18,7 +18,7 @@ const SearchBar = ({
   playlistName,
   playlistDescription,
   playlistIsPublic,
-  onTrackAdded
+  onTrackAdded,
 }: SearchBarProps) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SpotifyTrack[]>([]);
@@ -31,7 +31,10 @@ const SearchBar = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     };
@@ -60,7 +63,7 @@ const SearchBar = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query }),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch suggestions');
         }
@@ -94,17 +97,17 @@ const SearchBar = ({
     setShowSuggestions(false);
     setError(null);
 
-    console.log("Selected song: ", song);
+    console.log('Selected song: ', song);
     try {
       const response = await fetch('/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          TrackID: song.id,           // <-- Only send the track ID
+          TrackID: song.id, // <-- Only send the track ID
           PlaylistID: playlistID,
-          UserID: UserID              // If your backend expects this
+          UserID: UserID, // If your backend expects this
         }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -145,9 +148,9 @@ const SearchBar = ({
           trackId: track.id,
           name: playlistName,
           description: playlistDescription,
-          isPublic: playlistIsPublic
+          isPublic: playlistIsPublic,
         }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -164,13 +167,13 @@ const SearchBar = ({
   };
 
   return (
-    <div className="search-container relative" ref={searchRef}>
-      <div className="ui search">
-        <div className="ui input relative">
+    <div className='search-container relative' ref={searchRef}>
+      <div className='ui search'>
+        <div className='ui input relative'>
           <input
-            className="search-input pl-12"
-            type="text"
-            placeholder="Search songs, artists, playlists..."
+            className='search-input pl-12'
+            type='text'
+            placeholder='Search songs, artists, playlists...'
             value={query}
             onChange={handleInputChange}
             onFocus={() => {
@@ -184,50 +187,55 @@ const SearchBar = ({
               }, 200);
             }}
           />
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-            <svg 
-              className="w-5 h-5 text-gray-400" 
-              role="img" 
-              aria-hidden="true" 
-              viewBox="0 0 24 24"
+          <div className='pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 transform'>
+            <svg
+              className='h-5 w-5 text-gray-400'
+              role='img'
+              aria-hidden='true'
+              viewBox='0 0 24 24'
             >
-              <path 
-                fill="currentColor"
-                d="M10.533 1.27893C5.35215 1.27893 1.12598 5.41887 1.12598 10.5579C1.12598 15.697 5.35215 19.8369 10.533 19.8369C12.767 19.8369 14.8235 19.0671 16.4402 17.7794L20.7929 22.132C21.1834 22.5226 21.8166 22.5226 22.2071 22.132C22.5976 21.7415 22.5976 21.1083 22.2071 20.7178L17.8634 16.3741C19.1616 14.7849 19.94 12.7634 19.94 10.5579C19.94 5.41887 15.7138 1.27893 10.533 1.27893ZM3.12598 10.5579C3.12598 6.55226 6.42768 3.27893 10.533 3.27893C14.6383 3.27893 17.94 6.55226 17.94 10.5579C17.94 14.5636 14.6383 17.8369 10.533 17.8369C6.42768 17.8369 3.12598 14.5636 3.12598 10.5579Z"
+              <path
+                fill='currentColor'
+                d='M10.533 1.27893C5.35215 1.27893 1.12598 5.41887 1.12598 10.5579C1.12598 15.697 5.35215 19.8369 10.533 19.8369C12.767 19.8369 14.8235 19.0671 16.4402 17.7794L20.7929 22.132C21.1834 22.5226 21.8166 22.5226 22.2071 22.132C22.5976 21.7415 22.5976 21.1083 22.2071 20.7178L17.8634 16.3741C19.1616 14.7849 19.94 12.7634 19.94 10.5579C19.94 5.41887 15.7138 1.27893 10.533 1.27893ZM3.12598 10.5579C3.12598 6.55226 6.42768 3.27893 10.533 3.27893C14.6383 3.27893 17.94 6.55226 17.94 10.5579C17.94 14.5636 14.6383 17.8369 10.533 17.8369C6.42768 17.8369 3.12598 14.5636 3.12598 10.5579Z'
               />
             </svg>
           </div>
         </div>
         {error && (
-          <div className="error-message" style={{ color: 'red', marginTop: '0.5rem' }}>
+          <div
+            className='error-message'
+            style={{ color: 'red', marginTop: '0.5rem' }}
+          >
             {error}
           </div>
         )}
         {showSuggestions && suggestions.length > 0 && (
           <div className={`search-results ${!isFocused ? 'hidden' : ''}`}>
-            {suggestions.map((song) => (
+            {suggestions.map(song => (
               <div
                 key={song.id}
-                className="search-result-item"
+                className='search-result-item'
                 onClick={() => handleTrackSelect(song)} // <-- FIXED
               >
-                <img 
-                  src={song.album.images[0]?.url || '/default-album.png'} 
+                <img
+                  src={song.album.images[0]?.url || '/default-album.png'}
                   alt={song.name}
-                  className="search-result-image"
+                  className='search-result-image'
                 />
-                <div className="search-result-info">
-                  <div className="search-result-name">
+                <div className='search-result-info'>
+                  <div className='search-result-name'>
                     {song.name}
                     {song.explicit && (
-                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded ml-2">E</span>
+                      <span className='ml-2 rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300'>
+                        E
+                      </span>
                     )}
                   </div>
-                  <div className="search-result-artist">
+                  <div className='search-result-artist'>
                     {song.artists.map((artist: any) => artist.name).join(' & ')}
                   </div>
                 </div>
-                <div className="text-gray-400 text-sm">
+                <div className='text-sm text-gray-400'>
                   {formatDuration(song.duration_ms)}
                 </div>
               </div>

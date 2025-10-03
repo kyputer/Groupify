@@ -4,7 +4,6 @@ import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
 import { BLACKLIST_THRESHOLD, QUEUE_SONG_THRESHOLD } from '@/lib/constant';
 import { logger } from '@/lib/logger';
 
-
 const tracks = {
   upvote,
   downvote,
@@ -18,14 +17,21 @@ const tracks = {
   pushTrackToQueue,
 };
 
-async function upvote(track: Track, userID: number, playlistID: number = 1): Promise<{ trackID: number; votes: number; voteType: string }> {
-  logger.log(`Upvoting track: ${track.id} by user: ${userID} in playlist: ${playlistID}`);
+async function upvote(
+  track: Track,
+  userID: number,
+  playlistID: number = 1
+): Promise<{ trackID: number; votes: number; voteType: string }> {
+  logger.log(
+    `Upvoting track: ${track.id} by user: ${userID} in playlist: ${playlistID}`
+  );
   let conn;
   try {
     conn = await getDBConnection();
     logger.log('Database connection established');
 
-    const trackRows = await conn.query(`
+    const trackRows = await conn.query(
+      `
       SELECT tracks.id 
       FROM tracks 
       LEFT JOIN playlist_tracks 
@@ -33,7 +39,9 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
       WHERE tracks.SpotifyID=? 
       AND tracks.user_id=? 
       AND playlist_tracks.PlaylistID=?;
-      `, [track.id, userID, playlistID]);
+      `,
+      [track.id, userID, playlistID]
+    );
     let trackID: number;
     if (trackRows.length === 0) {
       const result = await conn.query(
@@ -50,7 +58,7 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
       [track.id, userID, playlistID]
     );
-    
+
     let voteType = 'upvote';
     if (voteRows.length > 0) {
       const currentVote = voteRows[0].VoteType;
@@ -60,7 +68,9 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
           `UPDATE votes SET VoteType='neutral' WHERE TrackID=? AND UserID=? AND PlaylistID=?;`,
           [track.id, userID, playlistID]
         );
-        await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
+        await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [
+          trackID,
+        ]);
         voteType = 'neutral';
         logger.log('Vote removed (neutral)');
       } else if (currentVote === 'downvote') {
@@ -69,7 +79,9 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
           ['upvote', track.id, userID, playlistID]
         );
-        await conn.query('UPDATE tracks SET votes=votes+2 WHERE id=?;', [trackID]);
+        await conn.query('UPDATE tracks SET votes=votes+2 WHERE id=?;', [
+          trackID,
+        ]);
         logger.log('Vote changed from downvote to upvote');
       } else if (currentVote === 'neutral') {
         // If neutral, change to upvote
@@ -84,13 +96,17 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
         'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
         [track.id, userID, 'upvote', playlistID]
       );
-      await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
+      await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [
+        trackID,
+      ]);
       logger.log('New upvote added');
-
     }
 
     // Get the updated vote count
-    const updatedTrack = await conn.query('SELECT votes FROM tracks WHERE id=?;', [trackID]);
+    const updatedTrack = await conn.query(
+      'SELECT votes FROM tracks WHERE id=?;',
+      [trackID]
+    );
     if (updatedTrack[0].votes >= QUEUE_SONG_THRESHOLD) {
       await pushTrackToQueue(track.id, playlistID);
     }
@@ -99,26 +115,28 @@ async function upvote(track: Track, userID: number, playlistID: number = 1): Pro
     logger.error('Database error:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
-async function downvote(track: Track, userID: number, playlistID: number = 1): Promise<{ trackID: number; votes: number; voteType: string }> {
-  logger.log(`Downvoting track: ${track.id} by user: ${userID} in playlist: ${playlistID}`);
+async function downvote(
+  track: Track,
+  userID: number,
+  playlistID: number = 1
+): Promise<{ trackID: number; votes: number; voteType: string }> {
+  logger.log(
+    `Downvoting track: ${track.id} by user: ${userID} in playlist: ${playlistID}`
+  );
   let conn;
   try {
     conn = await getDBConnection();
     logger.log('Database connection established');
 
     // First check if track exists
-    const trackRows = await conn.query('SELECT id FROM tracks WHERE SpotifyID=?;', [track.id]);
+    const trackRows = await conn.query(
+      'SELECT id FROM tracks WHERE SpotifyID=?;',
+      [track.id]
+    );
     const trackID = trackRows[0].id;
 
     // Check existing vote
@@ -126,18 +144,20 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
       'SELECT * FROM votes WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
       [track.id, userID, playlistID]
     );
-    
+
     let voteType = 'downvote';
     if (voteRows.length > 0) {
       const currentVote = voteRows[0].VoteType;
-      
+
       if (currentVote === 'downvote') {
         // If already downvoted, remove the vote (neutral)
         await conn.query(
           `UPDATE votes SET VoteType='neutral' WHERE TrackID=? AND UserID=? AND PlaylistID=?;`,
           [track.id, userID, playlistID]
         );
-        await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [trackID]);
+        await conn.query('UPDATE tracks SET votes=votes+1 WHERE id=?;', [
+          trackID,
+        ]);
         voteType = 'neutral';
         logger.log('Vote removed (neutral)');
       } else if (currentVote === 'upvote') {
@@ -146,7 +166,9 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
           ['downvote', track.id, userID, playlistID]
         );
-        await conn.query('UPDATE tracks SET votes=votes-2 WHERE id=?;', [trackID]);
+        await conn.query('UPDATE tracks SET votes=votes-2 WHERE id=?;', [
+          trackID,
+        ]);
         logger.log('Vote changed from upvote to downvote');
       } else if (currentVote === 'neutral') {
         // If neutral, change to downvote
@@ -154,7 +176,6 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
           'UPDATE votes SET VoteType=? WHERE TrackID=? AND UserID=? AND PlaylistID=?;',
           ['downvote', track.id, userID, playlistID]
         );
-        
       }
     } else {
       // New downvote
@@ -162,12 +183,17 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
         'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
         [track.id, userID, 'downvote', playlistID]
       );
-      await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [trackID]);
+      await conn.query('UPDATE tracks SET votes=votes-1 WHERE id=?;', [
+        trackID,
+      ]);
       console.log('New downvote added');
     }
 
     // Get the updated vote count
-    const updatedTrack = await conn.query('SELECT votes FROM tracks WHERE id=?;', [trackID]);
+    const updatedTrack = await conn.query(
+      'SELECT votes FROM tracks WHERE id=?;',
+      [trackID]
+    );
     console.log('Updated vote count:', updatedTrack[0].votes);
 
     if (updatedTrack[0].votes <= BLACKLIST_THRESHOLD) {
@@ -178,37 +204,27 @@ async function downvote(track: Track, userID: number, playlistID: number = 1): P
     console.error('Database error in downvote:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
 async function pushBlacklist(track: Track, playlistID: number): Promise<void> {
-  console.log(`Pushing track: ${track.id} to blacklist for playlist: ${playlistID}`);
+  console.log(
+    `Pushing track: ${track.id} to blacklist for playlist: ${playlistID}`
+  );
   let conn;
   try {
     conn = await getDBConnection();
-    await conn.query(`UPDATE tracks SET blacklist = 1  
+    await conn.query(
+      `UPDATE tracks SET blacklist = 1  
       LEFT JOIN playlist_tracks ON tracks.SpotifyID = playlist_tracks.TrackID 
-      WHERE playlist_tracks.PlaylistID=?;`, 
-      [playlistID]);
+      WHERE playlist_tracks.PlaylistID=?;`,
+      [playlistID]
+    );
   } catch (err) {
     console.error('Database error:', err);
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
@@ -220,12 +236,15 @@ export async function getNew(PlaylistID: number): Promise<SpotifyTrack[]> {
   return [];
 }
 
-async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[]> {
+async function getHot(
+  UserID: string,
+  PlaylistID: string
+): Promise<SpotifyTrack[]> {
   logger.log('getHot called with UserID:', UserID, 'PlaylistID:', PlaylistID);
   const conn = await getDBConnection();
   try {
     logger.log('Database connection established for getHot');
-    
+
     // First check if the playlist exists
     const playlistCheck = await conn.query(
       'SELECT PlaylistID FROM playlists WHERE PlaylistID = ?',
@@ -238,7 +257,8 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
     }
 
     // Check if there are any tracks in the playlist
-    const tracksCheck = await conn.query(`
+    const tracksCheck = await conn.query(
+      `
       SELECT COUNT(*) as count 
       FROM tracks t 
       INNER JOIN playlist_tracks pt ON pt.TrackID = t.id 
@@ -246,7 +266,8 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
       [PlaylistID]
     );
 
-    const rows = await conn.query(`
+    const rows = await conn.query(
+      `
       SELECT 
         DISTINCT t.SpotifyID,
         t.title,
@@ -273,15 +294,17 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
        AND (t.queue_at IS NULL OR t.queued = 0)
        AND (t.blacklist = 0 OR t.blacklist IS NULL)
       GROUP BY t.SpotifyID, t.title, t.artist, t.url, t.image, t.votes, t.duration_ms, t.explicit, v.VoteType, v.UserID
-      ORDER BY vote_count DESC;`, [UserID, PlaylistID, PlaylistID, PlaylistID]);
-    
+      ORDER BY vote_count DESC;`,
+      [UserID, PlaylistID, PlaylistID, PlaylistID]
+    );
+
     logger.log('Raw query results:', rows);
 
     if (rows.length === 0) {
       logger.log('No hot tracks found for playlist:', PlaylistID);
       return [];
     }
-    
+
     const mappedTracks = rows.map((row: any) => ({
       id: row.SpotifyID,
       name: row.title,
@@ -291,14 +314,14 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
       album: {
         id: row.SpotifyID,
         name: row.title,
-        images: [{ url: row.image }]
+        images: [{ url: row.image }],
       },
       duration_ms: row.duration_ms,
       explicit: row.explicit,
       preview_url: null,
       popularity: 0,
       Votes: row.vote_count || 0,
-      Selected: row.Selected || null
+      Selected: row.Selected || null,
     }));
 
     console.log('Mapped tracks:', mappedTracks);
@@ -307,29 +330,26 @@ async function getHot(UserID: string, PlaylistID: string): Promise<SpotifyTrack[
     console.error('Error in getHot:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
-async function pushTrackToQueue(trackID: string, playlistID: number): Promise<void> {
+async function pushTrackToQueue(
+  trackID: string,
+  playlistID: number
+): Promise<void> {
   logger.log(`Pushing track: ${trackID} to queue for playlist: ${playlistID}`);
   let conn;
   try {
     conn = await getDBConnection();
-    
+
     // First verify the track exists in the playlist
-    const trackExists = await conn.query(`
+    const trackExists = await conn.query(
+      `
       SELECT t.id 
       FROM tracks t 
       INNER JOIN playlist_tracks pt ON t.id = pt.TrackID 
-      WHERE pt.PlaylistID = ? AND t.SpotifyID = ?`, 
+      WHERE pt.PlaylistID = ? AND t.SpotifyID = ?`,
       [playlistID, trackID]
     );
 
@@ -339,45 +359,50 @@ async function pushTrackToQueue(trackID: string, playlistID: number): Promise<vo
     }
 
     // Update the track's queue status
-    const result = await conn.query(`
+    const result = await conn.query(
+      `
       UPDATE tracks t 
       INNER JOIN playlist_tracks pt ON t.id = pt.TrackID 
       SET t.queue_at = NOW(), 
           t.queued = 1 
       WHERE pt.PlaylistID = ? 
-      AND t.SpotifyID = ?`, 
+      AND t.SpotifyID = ?`,
       [playlistID, trackID]
     );
 
     if (result.affectedRows === 0) {
-      console.log(`No rows updated for track ${trackID} in playlist ${playlistID}`);
+      console.log(
+        `No rows updated for track ${trackID} in playlist ${playlistID}`
+      );
     } else {
-      console.log(`Successfully queued track ${trackID} in playlist ${playlistID}`);
+      console.log(
+        `Successfully queued track ${trackID} in playlist ${playlistID}`
+      );
     }
   } catch (err) {
     console.error('Database error in pushTrackToQueue:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
-
-
-async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTrack[]> {
-  logger.log('getPlayed called with UserID:', UserID, 'PlaylistID:', PlaylistID);
+async function getPlayed(
+  UserID: string,
+  PlaylistID: string
+): Promise<SpotifyTrack[]> {
+  logger.log(
+    'getPlayed called with UserID:',
+    UserID,
+    'PlaylistID:',
+    PlaylistID
+  );
   const conn = await getDBConnection();
   try {
     console.log('Database connection established for getPlayed');
 
-    const rows = await conn.query(`
+    const rows = await conn.query(
+      `
       SELECT 
         DISTINCT t.SpotifyID,
         t.title,
@@ -395,8 +420,10 @@ async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTra
        AND t.queue_at IS NOT NULL
        AND t.queued = 1
       GROUP BY t.SpotifyID, t.title, t.artist, t.url, t.image, t.duration_ms, t.explicit
-      ORDER BY t.queue_at ASC;`, [PlaylistID]);
-  
+      ORDER BY t.queue_at ASC;`,
+      [PlaylistID]
+    );
+
     console.log('Raw query results:', rows);
     const mappedTracks = rows.map((row: any) => ({
       id: row.SpotifyID,
@@ -407,14 +434,14 @@ async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTra
       album: {
         id: row.SpotifyID,
         name: row.title,
-        images: [{ url: row.image }]
+        images: [{ url: row.image }],
       },
       duration_ms: row.duration_ms,
       explicit: row.explicit,
       preview_url: null,
       popularity: 0,
       Votes: 0,
-      Selected: null
+      Selected: null,
     }));
 
     console.log('Mapped tracks:', mappedTracks);
@@ -423,20 +450,17 @@ async function getPlayed(UserID: string, PlaylistID: string): Promise<SpotifyTra
     console.error('Error in getPlayed:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
-async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userID: number): Promise<void> {
+async function addTrackToPlaylist(
+  track: SpotifyTrack,
+  playlistID: number,
+  userID: number
+): Promise<void> {
   console.log(`Adding track: ${track.id} to playlist: ${playlistID}`);
-  
+
   if (!playlistID || isNaN(playlistID)) {
     throw new Error(`Invalid PlaylistID: ${playlistID}`);
   }
@@ -444,16 +468,16 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
   let conn;
   try {
     conn = await getDBConnection();
-    
+
     // First check if track already exists
     const trackRows = await conn.query(
       'SELECT t.id FROM tracks t ' +
-      'JOIN playlist_tracks pt ON t.SpotifyID = pt.TrackID ' +
-      'WHERE t.SpotifyID = ? AND pt.PlaylistID = ?;',
+        'JOIN playlist_tracks pt ON t.SpotifyID = pt.TrackID ' +
+        'WHERE t.SpotifyID = ? AND pt.PlaylistID = ?;',
       [track.id, playlistID]
     );
     let trackID: number;
-    
+
     if (trackRows.length === 0) {
       // Insert new track with initial vote count of 1
       const result = await conn.query(
@@ -467,13 +491,13 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
           userID,
           1,
           track.duration_ms,
-          track.explicit
+          track.explicit,
         ]
       );
       trackID = result.insertId;
       console.log('New track inserted:', trackID);
 
-          // Add track to playlist
+      // Add track to playlist
       await conn.query(
         'INSERT INTO playlist_tracks (PlaylistID, TrackID) VALUES (?, ?) ON DUPLICATE KEY UPDATE PlaylistID=PlaylistID;',
         [playlistID, trackID]
@@ -483,12 +507,11 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
       trackID = trackRows[0].id;
       console.log('Existing track found:', trackID);
       // Update the track's votes to += 1
-      await conn.query(
-        'UPDATE tracks SET votes = votes + 1 WHERE id = ?;',
-        [trackID]
-      );
+      await conn.query('UPDATE tracks SET votes = votes + 1 WHERE id = ?;', [
+        trackID,
+      ]);
     }
-    console.log("++++++++++++++++++++");
+    console.log('++++++++++++++++++++');
     console.log('starting vote check');
     // Check if user has already voted on this track
     const voteRows = await conn.query(
@@ -510,14 +533,7 @@ async function addTrackToPlaylist(track: SpotifyTrack, playlistID: number, userI
     console.error('Database error:', err);
     throw err;
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
 }
 
@@ -537,18 +553,10 @@ async function getPlaylistVotes(playlistID: number): Promise<number> {
   } catch (err) {
     console.error('Database error:', err);
   } finally {
-    if (conn) {
-      try {
-        await conn.release();
-        console.log('Database connection released');
-      } catch (releaseErr) {
-        console.error('Error releasing database connection:', releaseErr);
-      }
-    }
+    if (conn) await conn.release();
   }
   return totalVotes;
 }
-    
 
 // ...existing code for other functions with appropriate TypeScript annotations...
 

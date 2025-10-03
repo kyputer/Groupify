@@ -1,6 +1,10 @@
 import { store } from './store';
 import { clearUser } from './features/userSlice';
 import { clearAllPartyCode } from './features/partySlice';
+import { createAction } from '@reduxjs/toolkit';
+
+// This action will reset the entire Redux store to initial state
+export const resetAll = createAction('RESET_ALL');
 
 export async function resetStore() {
   try {
@@ -8,8 +12,8 @@ export async function resetStore() {
     const response = await fetch('/api/reset', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -26,4 +30,4 @@ export async function resetStore() {
     console.error('Error resetting store:', error);
     throw error;
   }
-} 
+}

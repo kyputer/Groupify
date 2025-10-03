@@ -23,14 +23,23 @@ export async function GET(request: Request) {
   let userId: string | null = null;
   let storedState: string | null = null;
   if (cookies) {
-    const userCookie = cookies.split(';').map(c => c.trim()).find(c => c.startsWith('spotifyAuthUser='));
+    const userCookie = cookies
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('spotifyAuthUser='));
     userId = userCookie ? userCookie.split('=')[1] : null;
-    const stateCookie = cookies.split(';').map(c => c.trim()).find(c => c.startsWith('spotifyAuthState='));
+    const stateCookie = cookies
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('spotifyAuthState='));
     storedState = stateCookie ? stateCookie.split('=')[1] : null;
   }
 
   if (!code || !state || !userId || !storedState) {
-    return NextResponse.json({ error: 'Missing code, state, or userId' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing code, state, or userId' },
+      { status: 400 }
+    );
   }
 
   console.log('Callback query state:', state);
@@ -48,7 +57,12 @@ export async function GET(request: Request) {
     const expiresIn = data.body['expires_in'];
 
     // Save tokens for the user
-    await saveSpotifyTokensForUser(userId, accessToken, refreshToken, expiresIn);
+    await saveSpotifyTokensForUser(
+      userId,
+      accessToken,
+      refreshToken,
+      expiresIn
+    );
 
     spotifyApi.setAccessToken(accessToken);
     spotifyApi.setRefreshToken(refreshToken);
@@ -57,6 +71,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/dashboard`);
   } catch (err) {
     console.error('Error during authorization code grant:', err);
-    return NextResponse.json({ error: 'Authorization failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Authorization failed' },
+      { status: 500 }
+    );
   }
 }

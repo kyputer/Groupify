@@ -35,7 +35,10 @@
 // }
 import SpotifyWebApi from 'spotify-web-api-node';
 import { SpotifyTrack } from '@/interfaces/SpotifyTrack';
-import { getSpotifyTokensForUser, saveSpotifyTokensForUser } from '@/lib/spotifyTokens';
+import {
+  getSpotifyTokensForUser,
+  saveSpotifyTokensForUser,
+} from '@/lib/spotifyTokens';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -44,14 +47,14 @@ let tokenExpirationTime: number = 0;
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: process.env.SPOTIFY_REDIRECT_URI
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
 async function refreshAccessToken() {
   try {
     const data = await spotifyApi.clientCredentialsGrant();
     accessToken = data.body['access_token'];
-    tokenExpirationTime = Date.now() + (data.body['expires_in'] * 1000);
+    tokenExpirationTime = Date.now() + data.body['expires_in'] * 1000;
     spotifyApi.setAccessToken(accessToken);
     return true;
   } catch (error) {
@@ -81,7 +84,7 @@ function mapTrackToSpotifyTrack(track: any): SpotifyTrack {
     name: track.name,
     artists: track.artists.map((artist: any) => ({
       id: artist.id,
-      name: artist.name
+      name: artist.name,
     })),
     album: {
       id: track.album.id,
@@ -89,11 +92,11 @@ function mapTrackToSpotifyTrack(track: any): SpotifyTrack {
       images: track.album.images.map((image: any) => ({
         url: image.url,
         height: image.height,
-        width: image.width
-      }))
+        width: image.width,
+      })),
     },
     external_urls: {
-      spotify: track.external_urls.spotify
+      spotify: track.external_urls.spotify,
     },
     preview_url: track.preview_url,
     duration_ms: track.duration_ms,
@@ -103,19 +106,19 @@ function mapTrackToSpotifyTrack(track: any): SpotifyTrack {
     queue_at: null,
     played: false,
     played_at: null,
-    blacklist: false
+    blacklist: false,
   };
 }
 
 export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
-  if (!await ensureValidToken()) {
+  if (!(await ensureValidToken())) {
     throw new Error('Failed to initialize Spotify API');
   }
 
   try {
-    const response = await spotifyApi.searchTracks(query, { 
+    const response = await spotifyApi.searchTracks(query, {
       limit: 10,
-      market: 'US'
+      market: 'US',
     });
     return response.body.tracks?.items.map(mapTrackToSpotifyTrack) || [];
   } catch (error) {
@@ -124,8 +127,10 @@ export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
   }
 }
 
-export async function getTrackDetails(trackId: string): Promise<SpotifyTrack | null> {
-  if (!await ensureValidToken()) {
+export async function getTrackDetails(
+  trackId: string
+): Promise<SpotifyTrack | null> {
+  if (!(await ensureValidToken())) {
     throw new Error('Failed to initialize Spotify API');
   }
 
@@ -154,7 +159,7 @@ export async function createSpotifyPlaylist(
   spotifyApi.setAccessToken(accessToken);
 
   try {
-    console.log("SPOTIFY PLAYLIST CREATION TRY!");
+    console.log('SPOTIFY PLAYLIST CREATION TRY!');
     const response = await spotifyApi.createPlaylist(name, {
       description,
       public: isPublic,
@@ -166,8 +171,10 @@ export async function createSpotifyPlaylist(
   }
 }
 
-export async function getMultipleTrackDetails(trackIds: string[]): Promise<SpotifyTrack[]> {
-  if (!await ensureValidToken()) {
+export async function getMultipleTrackDetails(
+  trackIds: string[]
+): Promise<SpotifyTrack[]> {
+  if (!(await ensureValidToken())) {
     throw new Error('Failed to initialize Spotify API');
   }
 
@@ -189,7 +196,7 @@ export function getAuthorizationUrl(): string {
 
 export async function handleAuthorizationCallback(code: string): Promise<void> {
   try {
-    console.log("HANDLING AUTHRORIZATION CALLBACK");
+    console.log('HANDLING AUTHRORIZATION CALLBACK');
     const data = await spotifyApi.authorizationCodeGrant(code);
     accessToken = data.body['access_token'];
     refreshToken = data.body['refresh_token'];
@@ -217,7 +224,7 @@ export async function refreshUserAccessToken(userId: number) {
 }
 
 export async function getSpotifyUserId(): Promise<string> {
-  if (!await ensureValidToken()) {
+  if (!(await ensureValidToken())) {
     throw new Error('Failed to initialize Spotify API');
   }
 
@@ -240,6 +247,6 @@ export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
+}
 
 export default spotifyApi;
