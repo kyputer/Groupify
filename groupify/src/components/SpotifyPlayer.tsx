@@ -7,24 +7,40 @@ import { RootState } from '@/lib/store';
 declare global {
   interface Window {
     onSpotifyWebPlaybackSDKReady: () => void;
-    Spotify: any;
+    Spotify: unknown;
   }
+}
+
+interface Track {
+  id: string;
+  Votes?: number;
+  played?: boolean;
+  // Add other properties as needed, e.g. name, album, artists, etc.
 }
 
 interface SpotifyPlayerProps {
   PartyCode: string;
   PlaylistID: string;
-  tracks: any[]; // Hot tracks that can be played
+  tracks: Track[]; // Hot tracks that can be played
+}
+
+interface SpotifyCurrentTrack {
+  name: string;
+  album: {
+    images: { url: string }[];
+  };
+  artists: { name: string }[];
+  // Add other properties as needed
 }
 
 export const SpotifyPlayer = ({ PartyCode, PlaylistID, tracks }: SpotifyPlayerProps) => {
-  const [player, setPlayer] = useState<any>(null);
+  const [player, setPlayer] = useState<Spotify.Player | null>(null);
   const [is_paused, setPaused] = useState(false);
   const [is_active, setActive] = useState(false);
-  const [current_track, setTrack] = useState<any>(null);
+  const [current_track, setTrack] = useState<SpotifyCurrentTrack | null>(null);
   const [deviceId, setDeviceId] = useState<string>('');
   const [isSDKReady, setSDKReady] = useState(false);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<Spotify.Player | null>(null);
 
   // Load Spotify Web Playback SDK
   useEffect(() => {
@@ -76,20 +92,20 @@ export const SpotifyPlayer = ({ PartyCode, PlaylistID, tracks }: SpotifyPlayerPr
       });
 
       // Error handling
-      spotifyPlayer.addListener('initialization_error', ({ message }: any) => {
+      spotifyPlayer.addListener('initialization_error', ({ message }: { message: string }) => {
         console.error('Spotify Player initialization error:', message);
       });
 
-      spotifyPlayer.addListener('authentication_error', ({ message }: any) => {
+      spotifyPlayer.addListener('authentication_error', ({ message }: { message: string }) => {
         console.error('Spotify Player authentication error:', message);
       });
 
-      spotifyPlayer.addListener('account_error', ({ message }: any) => {
+      spotifyPlayer.addListener('account_error', ({ message }: { message: string }) => {
         console.error('Spotify Player account error:', message);
       });
 
       // Playback status updates
-      spotifyPlayer.addListener('player_state_changed', (state: any) => {
+      spotifyPlayer.addListener('player_state_changed', (state: Spotify.PlaybackState | null) => {
         if (!state) return;
 
         setTrack(state.track_window.current_track);
@@ -102,14 +118,14 @@ export const SpotifyPlayer = ({ PartyCode, PlaylistID, tracks }: SpotifyPlayerPr
       });
 
       // Ready
-      spotifyPlayer.addListener('ready', ({ device_id }: any) => {
+      spotifyPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
         console.log('Spotify Player ready with Device ID:', device_id);
         setDeviceId(device_id);
         setActive(true);
       });
 
       // Not Ready
-      spotifyPlayer.addListener('not_ready', ({ device_id }: any) => {
+      spotifyPlayer.addListener('not_ready', ({ device_id }: { device_id: string }) => {
         console.log('Spotify Player not ready with Device ID:', device_id);
         setActive(false);
       });

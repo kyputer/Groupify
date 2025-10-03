@@ -4,6 +4,7 @@ import { logger } from './logger';
 
 dotenv.config();
 
+// Production-optimized connection configuration
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
   user: process.env.DB_USER || 'groupify',
@@ -11,90 +12,104 @@ const dbConfig = {
   database: process.env.DB_NAME || 'groupify',
   port: parseInt(process.env.DB_PORT || '3306', 10),
 
-  connectionLimit: 5, // Reduced from 10 - fewer connections
-  acquireTimeout: 10000, // Reduced from 30s - fail faster
+  // Ultra-lean production settings
+  connectionLimit: process.env.NODE_ENV === 'production' ? 2 : 5, // Minimal connections in prod
+  acquireTimeout: 8000, // 8s timeout
   timeout: 5000, // 5s query timeout
-  idleTimeout: 30000, // 30s idle timeout
-  leakDetectionTimeout: 60000, // 60s leak detection
-  waitForConnections: true,
-  queueLimit: 0,
-  multipleStatements: true,
+  idleTimeout: 120000, // 2 minutes idle (longer to avoid reconnection overhead)
+  leakDetectionTimeout: 0, // Disable in production to reduce overhead
 
-  // Connection reliability settings
+  // Connection efficiency settings
   reconnect: true,
-  maxReconnects: 3,
-
-  // Additional settings to prevent aborted connections
-  multipleStatements: false, // Disable for security
+  maxReconnects: 2, // Fewer retries in prod
+  multipleStatements: false,
   nestTables: false,
   rowsAsArray: false,
-
-  // MariaDB specific optimizations
-  compress: false,
+  compress: process.env.NODE_ENV === 'production', // Enable compression in prod
   permitLocalInfile: false,
 
-  // Connection validation
-  pingInterval: 60000, // Ping every minute to keep connections alive
-  resetAfterUse: true, // Reset connection state after each use
+  // Keep connections alive longer in production
+  pingInterval: process.env.NODE_ENV === 'production' ? 300000 : 60000, // 5min in prod, 1min in dev
+  resetAfterUse: false, // Disable in production for better performance
 
-  // Prevent connection drops
+  // Production connection optimization
   autoReconnect: true,
-  maxIdle: 5, // Maximum idle connections
-  minIdle: 2, // Minimum idle connections
+  maxIdle: process.env.NODE_ENV === 'production' ? 1 : 3, // Minimal idle connections
+  minIdle: process.env.NODE_ENV === 'production' ? 0 : 1, // No minimum in prod
+
+  // Additional production optimizations
+  dateStrings: false,
+  supportBigNumbers: true,
+  bigNumberStrings: false,
+  timezone: 'Z',
+
+  // Connection validation (minimal in production)
+  acquireCallback:
+    process.env.NODE_ENV === 'development'
+      ? (err: Error | null) => {
+          if (err) logger.error('Connection acquire error:', err.message);
+        }
+      : undefined,
 };
 
-// Create pool with better error handling
 let pool: Pool;
+let isShuttingDown = false;
 
 function createPool(): Pool {
-  return mariadb.createPool({
-    ...dbConfig,
-    // Enhanced error handling
-    acquireTimeout: 30000,
-    timeout: 15000,
-    // Add connection event handlers
-    acquireCallback: (err: Error | null, conn?: PoolConnection) => {
-      if (err) {
-        logger.error('Connection acquire error:', err.message);
-      }
-    },
-  });
+  if (isShuttingDown) {
+    throw new Error('Database pool is shutting down');
+  }
+
+  const newPool = mariadb.createPool(dbConfig);
+
+  // Add minimal error handling
+  if (process.env.NODE_ENV === 'development') {
+    newPool.on('error', (err: Error) => {
+      logger.error('Pool error:', err.message);
+    });
+  }
+
+  return newPool;
 }
 
 // Initialize pool
 pool = createPool();
 
-// Function to recreate the pool (useful after reset)
+// Optimized pool recreation (rarely needed in production)
 export function recreatePool(): void {
-  if (pool) {
-    pool.end().catch(err => {
-      logger.warn('Error closing old pool:', err.message);
-    });
-  }
+  if (isShuttingDown) return;
+
+  const oldPool = pool;
   pool = createPool();
+
+  // Close old pool asynchronously to avoid blocking
+  oldPool?.end().catch(err => {
+    if (process.env.NODE_ENV === 'development') {
+      logger.warn('Error closing old pool:', err.message);
+    }
+  });
+
   logger.log('Database connection pool recreated');
 }
 
 /**
- * Enhanced connection management with comprehensive error handling
+ * Production-optimized connection management
  */
 export async function getDBConnection(): Promise<PoolConnection> {
-  let retries = 3;
+  if (isShuttingDown) {
+    throw new Error('Database service is shutting down');
+  }
+
+  let retries = process.env.NODE_ENV === 'production' ? 2 : 3;
 
   while (retries > 0) {
     try {
       const connection = await pool.getConnection();
 
-      // Add connection event handlers for better debugging
+      // Minimal event handlers only in development
       if (process.env.NODE_ENV === 'development') {
         connection.on('error', (err: Error) => {
           logger.error('Connection error:', err.message);
-        });
-
-        connection.on('end', () => {
-          if (process.env.NODE_ENV === 'development') {
-            logger.log('Connection ended gracefully');
-          }
         });
       }
 
@@ -102,26 +117,33 @@ export async function getDBConnection(): Promise<PoolConnection> {
     } catch (err) {
       retries--;
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-      logger.error(
-        `Failed to get DB connection (${retries} retries left):`,
-        errorMsg
-      );
 
-      if (retries === 0) {
-        // Last retry failed, recreate pool and try once more
-        try {
-          recreatePool();
-          return await pool.getConnection();
-        } catch (finalErr) {
-          logger.error('Final connection attempt failed:', finalErr);
-          throw new Error(
-            `Database connection failed after retries: ${errorMsg}`
-          );
-        }
+      if (process.env.NODE_ENV === 'development') {
+        logger.error(
+          `Failed to get DB connection (${retries} retries left):`,
+          errorMsg
+        );
       }
 
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+      if (retries === 0) {
+        // Only recreate pool in development or critical production errors
+        if (
+          process.env.NODE_ENV === 'development' ||
+          errorMsg.includes('ECONNREFUSED')
+        ) {
+          try {
+            recreatePool();
+            return await pool.getConnection();
+          } catch (finalErr) {
+            throw new Error(`Database connection failed: ${errorMsg}`);
+          }
+        }
+        throw new Error(`Database connection failed: ${errorMsg}`);
+      }
+
+      // Shorter retry delay in production
+      const delay = process.env.NODE_ENV === 'production' ? 500 : 1000;
+      await new Promise(resolve => setTimeout(resolve, delay * (3 - retries)));
     }
   }
 
@@ -129,11 +151,11 @@ export async function getDBConnection(): Promise<PoolConnection> {
 }
 
 /**
- * Execute query with automatic connection management
+ * Production-optimized query execution
  */
-export async function executeQuery<T = any>(
+export async function executeQuery<T = unknown>(
   query: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T> {
   let conn: PoolConnection | undefined;
 
@@ -142,24 +164,29 @@ export async function executeQuery<T = any>(
     const result = await conn.query(query, params);
     return result;
   } catch (error) {
-    logger.error('Query execution error:', {
-      query: query.substring(0, 100) + '...', // Log first 100 chars
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    // Minimal logging in production
+    if (process.env.NODE_ENV === 'development') {
+      logger.error('Query execution error:', {
+        query: query.substring(0, 100) + '...',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
     throw error;
   } finally {
     if (conn) {
       try {
         await conn.release();
       } catch (releaseError) {
-        logger.error('Error releasing connection:', releaseError);
+        if (process.env.NODE_ENV === 'development') {
+          logger.error('Error releasing connection:', releaseError);
+        }
       }
     }
   }
 }
 
 /**
- * Execute transaction with automatic rollback on error
+ * Production-optimized transaction execution
  */
 export async function executeTransaction<T>(
   callback: (conn: PoolConnection) => Promise<T>
@@ -179,7 +206,9 @@ export async function executeTransaction<T>(
       try {
         await conn.rollback();
       } catch (rollbackError) {
-        logger.error('Error during rollback:', rollbackError);
+        if (process.env.NODE_ENV === 'development') {
+          logger.error('Error during rollback:', rollbackError);
+        }
       }
     }
     throw error;
@@ -188,7 +217,9 @@ export async function executeTransaction<T>(
       try {
         await conn.release();
       } catch (releaseError) {
-        logger.error('Error releasing connection:', releaseError);
+        if (process.env.NODE_ENV === 'development') {
+          logger.error('Error releasing connection:', releaseError);
+        }
       }
     }
   }
@@ -200,10 +231,10 @@ export async function executeTransaction<T>(
 export async function initializeDatabase(
   force: boolean = false
 ): Promise<void> {
-  logger.log('Manual database initialization triggered with force:', force);
+  logger.log('Database initialization triggered with force:', force);
 
   return executeTransaction(async conn => {
-    logger.log('Database connection acquired for reset');
+    logger.log('Database connection acquired for initialization');
 
     // Create database if it doesn't exist
     await conn.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
@@ -234,7 +265,7 @@ export async function initializeDatabase(
     await conn.query('SET FOREIGN_KEY_CHECKS=1');
     logger.log('All tables dropped successfully');
 
-    // Recreate all tables
+    // Recreate all tables with optimized schema
     await conn.query(`
       CREATE TABLE users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -242,10 +273,11 @@ export async function initializeDatabase(
         email VARCHAR(100) DEFAULT NULL,
         password_hash VARCHAR(255) NOT NULL,
         spotify_refresh_token VARCHAR(512),
-        spotify_access_token VARCHAR(512),
+        spotify_access_token VARCHAR(512), 
         spotify_access_token_expires_at BIGINT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) AUTO_INCREMENT = 1
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_username (username)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Users table created');
 
@@ -254,7 +286,7 @@ export async function initializeDatabase(
         id INT AUTO_INCREMENT PRIMARY KEY,
         SpotifyID VARCHAR(22) NOT NULL UNIQUE,
         title VARCHAR(255) NOT NULL,
-        artist VARCHAR(255) NOT NULL,
+        artist VARCHAR(255) NOT NULL, 
         url VARCHAR(255) NOT NULL,
         image VARCHAR(255) NOT NULL,
         user_id INT,
@@ -267,8 +299,11 @@ export async function initializeDatabase(
         played BOOLEAN DEFAULT FALSE,
         played_at TIMESTAMP DEFAULT NULL,
         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-      ) AUTO_INCREMENT = 1
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_spotify_id (SpotifyID),
+        INDEX idx_votes (votes),
+        INDEX idx_queue_at (queue_at)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Tracks table created');
 
@@ -283,8 +318,10 @@ export async function initializeDatabase(
         description TEXT DEFAULT NULL,
         open BOOLEAN DEFAULT TRUE,
         spotify_url VARCHAR(500) DEFAULT NULL,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-      ) AUTO_INCREMENT = 1
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_code (code),
+        INDEX idx_created_by (created_by)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Playlists table created');
 
@@ -296,10 +333,11 @@ export async function initializeDatabase(
         VoteType ENUM('upvote', 'downvote', 'neutral') NOT NULL,
         PlaylistID INT NOT NULL DEFAULT 1,
         FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE,
+        FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE, 
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
-        UNIQUE (PlaylistID, TrackID, UserID)
-      ) AUTO_INCREMENT = 1
+        UNIQUE KEY unique_vote (PlaylistID, TrackID, UserID),
+        INDEX idx_track_playlist (TrackID, PlaylistID)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Votes table created');
 
@@ -310,8 +348,8 @@ export async function initializeDatabase(
         TrackID VARCHAR(22),
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         FOREIGN KEY (TrackID) REFERENCES tracks(SpotifyID) ON DELETE CASCADE,
-        UNIQUE (PlaylistID, TrackID)
-      ) AUTO_INCREMENT = 1
+        UNIQUE KEY unique_playlist_track (PlaylistID, TrackID)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Playlist_tracks table created');
 
@@ -319,37 +357,49 @@ export async function initializeDatabase(
       CREATE TABLE playlist_users (
         PlaylistUserID INT AUTO_INCREMENT PRIMARY KEY,
         PlaylistID INT NOT NULL,
-        UserID INT NOT NULL,
+        UserID INT NOT NULL, 
         Joined BOOLEAN DEFAULT TRUE,
         FOREIGN KEY (PlaylistID) REFERENCES playlists(PlaylistID) ON DELETE CASCADE,
         FOREIGN KEY (UserID) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE (PlaylistID, UserID)
-      ) AUTO_INCREMENT = 1
+        UNIQUE KEY unique_playlist_user (PlaylistID, UserID)
+      ) AUTO_INCREMENT = 1 ENGINE=InnoDB
     `);
     logger.log('Playlist_users table created');
 
-    logger.log('All tables recreated with reset AUTO_INCREMENT');
-    logger.log('Database reset completed successfully!');
+    logger.log('Database initialization completed successfully!');
   });
 }
 
-// Pool monitoring and cleanup
+// Production-safe monitoring and cleanup
 if (typeof window === 'undefined') {
-  // Server-side only: Set up periodic pool monitoring
-  setInterval(() => {
-    if (pool && process.env.NODE_ENV === 'development') {
-      // Log pool statistics periodically
-      console.log('DB Pool Stats:', {
-        totalConnections: pool.totalConnections(),
-        activeConnections: pool.activeConnections(),
-        idleConnections: pool.idleConnections(),
-      });
-    }
-  }, 60000); // Every minute
+  // Only enable monitoring in development
+  if (process.env.NODE_ENV === 'development') {
+    const monitoringInterval = setInterval(() => {
+      if (pool && !isShuttingDown) {
+        console.log('DB Pool Stats:', {
+          totalConnections: pool.totalConnections(),
+          activeConnections: pool.activeConnections(),
+          idleConnections: pool.idleConnections(),
+        });
+      }
+    }, 120000); // Every 2 minutes in development
 
-  // Graceful shutdown handling
-  const gracefulShutdown = async () => {
-    logger.log('Shutting down database pool...');
+    // Clear interval on shutdown
+    const clearMonitoring = () => {
+      clearInterval(monitoringInterval);
+    };
+
+    process.on('SIGTERM', clearMonitoring);
+    process.on('SIGINT', clearMonitoring);
+  }
+
+  // Production-safe graceful shutdown
+  const gracefulShutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    logger.log(`Received ${signal}, shutting down database pool...`);
+
     if (pool) {
       try {
         await pool.end();
@@ -358,9 +408,23 @@ if (typeof window === 'undefined') {
         logger.error('Error closing database pool:', error);
       }
     }
+
+    // Exit gracefully
+    process.exit(0);
   };
 
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('SIGINT', gracefulShutdown);
-  process.on('beforeExit', gracefulShutdown);
+  // Only attach to actual shutdown signals (not beforeExit!)
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', error => {
+    logger.error('Uncaught exception:', error);
+    gracefulShutdown('uncaughtException');
+  });
+
+  process.on('unhandledRejection', reason => {
+    logger.error('Unhandled rejection:', reason);
+    gracefulShutdown('unhandledRejection');
+  });
 }

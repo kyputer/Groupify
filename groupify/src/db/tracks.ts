@@ -305,7 +305,21 @@ async function getHot(
       return [];
     }
 
-    const mappedTracks = rows.map((row: any) => ({
+    interface HotTrackRow {
+      SpotifyID: string;
+      title: string;
+      artist: string;
+      url: string;
+      image: string;
+      votes: number;
+      duration_ms: number;
+      explicit: boolean;
+      Selected: string | null;
+      UserID: string;
+      vote_count: number;
+    }
+
+    const mappedTracks = rows.map((row: HotTrackRow) => ({
       id: row.SpotifyID,
       name: row.title,
       artists: [{ name: row.artist }],
@@ -425,7 +439,7 @@ async function getPlayed(
     );
 
     console.log('Raw query results:', rows);
-    const mappedTracks = rows.map((row: any) => ({
+    const mappedTracks = rows.map((row: HotTrackRow) => ({
       id: row.SpotifyID,
       name: row.title,
       artists: [{ name: row.artist }],

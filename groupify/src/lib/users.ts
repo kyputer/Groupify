@@ -1,6 +1,13 @@
 import { getDBConnection } from './db';
 import bcrypt from 'bcryptjs';
 
+export interface User {
+  id: number;
+  username: string;
+  password_hash: string;
+  // Add other fields as needed
+}
+
 export async function findUserByUsername(username: string) {
   const conn = await getDBConnection();
   try {
@@ -39,7 +46,7 @@ export async function registerUser(username: string, password: string) {
   }
 }
 
-export async function findUserById(userId: number): Promise<any | null> {
+export async function findUserById(userId: number): Promise<User | null> {
   if (!userId || isNaN(userId)) {
     console.error('Invalid userId:', userId);
     return null;
@@ -49,7 +56,7 @@ export async function findUserById(userId: number): Promise<any | null> {
   try {
     conn = await getDBConnection();
     const rows = await conn.query('SELECT * FROM users WHERE id = ?', [userId]);
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? (rows[0] as User) : null;
   } catch (err) {
     console.error('Error finding user by ID:', err);
     return null;
