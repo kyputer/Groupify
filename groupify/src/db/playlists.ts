@@ -34,11 +34,10 @@ export async function createPlaylist(
       throw new Error(`User with ID ${createdBy} does not exist.`);
     }
 
-    // Check for Spotify token
+    // Check for Spotify token and create Spotify playlist if available
     const { accessToken } = await getSpotifyTokensForUser(Number(createdBy));
     let splaylistres = null;
     if (accessToken) {
-      // Only create Spotify playlist if user has a token
       splaylistres = await createSpotifyPlaylist(
         name,
         description,
@@ -52,6 +51,7 @@ export async function createPlaylist(
       );
     }
 
+    // Generate unique code
     let code = '';
     while (true) {
       code = generateCode();
@@ -67,18 +67,33 @@ export async function createPlaylist(
     console.log(
       `Creating playlist with code: ${code} and name: ${name} and description: ${description}`
     );
+
+    // Create the playlist
     const result = await conn.query(
       `INSERT INTO playlists (name, code, created_at, created_by, is_public, description)
        VALUES (?, ?, NOW(), ?, ?, ?)`,
       [name, code, createdBy, isPublic, description]
     );
 
+    const playlistId = result.insertId;
+
+    // AUTOMATICALLY ADD THE CREATOR TO THE PLAYLIST_USERS TABLE
+    await conn.query(
+      `INSERT INTO playlist_users (PlaylistID, UserID, Joined)
+       VALUES (?, ?, TRUE)`,
+      [playlistId, createdBy]
+    );
+
+    console.log(
+      `Creator ${createdBy} automatically joined playlist ${playlistId}`
+    );
+
     return {
-      id: result.insertId.toString(), // Convert BigInt to string
+      id: playlistId.toString(),
       name,
       code,
       createdAt: new Date().toISOString(),
-      createdBy: createdBy.toString(), // Convert BigInt to string
+      createdBy: createdBy.toString(),
       isPublic,
       description,
       isJoined: true,
@@ -118,9 +133,11 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
 export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
   const conn = await getDBConnection();
   try {
+    console.log('Getting playlists for user:', userID);
+
     const rows = await conn.query(
       `
-      SELECT playlists.* FROM playlists 
+      SELECT playlists.*, playlist_users.Joined FROM playlists 
       LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
       WHERE playlist_users.UserID = ?
       AND playlist_users.Joined = 1
@@ -128,6 +145,9 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
       ORDER BY playlists.created_at DESC`,
       [userID]
     );
+
+    console.log('Found playlists:', rows.length);
+
     return rows.map((row: any) => ({
       id: row.PlaylistID,
       name: row.name,

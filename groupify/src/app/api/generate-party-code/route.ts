@@ -24,11 +24,19 @@ export async function POST(request: NextRequest) {
       sanitizedDescription
     );
 
-    // Use the numeric ID for joinPlaylistWithID
-    const playlistCode = await playlists.joinPlaylistWithID(
-      newPlaylist.id.toString(), // Convert to string for the function
-      session
-    );
+    console.log('Created playlist:', newPlaylist);
+
+    // Join the playlist using the playlist ID
+    try {
+      const playlistCode = await playlists.joinPlaylistWithID(
+        newPlaylist.id.toString(),
+        session
+      );
+      console.log('Successfully joined playlist with code:', playlistCode);
+    } catch (joinError) {
+      console.error('Error joining playlist:', joinError);
+      // Even if join fails, we created the playlist successfully
+    }
 
     return NextResponse.json({
       success: true,
