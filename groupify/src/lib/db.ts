@@ -62,12 +62,8 @@ function createPool(): Pool {
 
   const newPool = mariadb.createPool(dbConfig);
 
-  // Add minimal error handling
-  if (process.env.NODE_ENV === 'development') {
-    newPool.on('error', (err: Error) => {
-      logger.error('Pool error:', err.message);
-    });
-  }
+  // Pool does not support 'error' event; error handling should be done on connections
+  // No pool-level error handler needed here
 
   return newPool;
 }
@@ -134,7 +130,7 @@ export async function getDBConnection(): Promise<PoolConnection> {
           try {
             recreatePool();
             return await pool.getConnection();
-          } catch (finalErr) {
+          } catch {
             throw new Error(`Database connection failed: ${errorMsg}`);
           }
         }

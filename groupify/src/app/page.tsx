@@ -108,7 +108,9 @@ export default function HomePage() {
 
       if (!response.ok) {
         throw new Error(
-          responseData.details || responseData.error || 'Failed to reset database'
+          responseData.details ||
+            responseData.error ||
+            'Failed to reset database'
         );
       }
 
@@ -129,7 +131,9 @@ export default function HomePage() {
     } catch (err) {
       console.error('Error resetting:', err);
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to reset. Please try again.';
+        err instanceof Error
+          ? err.message
+          : 'Failed to reset. Please try again.';
       setError(errorMessage);
 
       setTimeout(() => {

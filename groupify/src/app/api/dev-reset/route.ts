@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { initializeDatabase, recreatePool } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { cache } from '@/lib/cache';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Only allow in development - NO AUTH REQUIRED
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Add GET method for easy URL access - NO AUTH REQUIRED
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Only allow in development
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(

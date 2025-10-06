@@ -16,6 +16,7 @@ import { ClosePartyButton } from './CloseParty';
 import { RainbowButton } from './RainbowButton';
 import { SpotifyPlayer } from './SpotifyPlayer';
 import { SpotifyButton } from './SpotifyButton';
+import Image from 'next/image';
 
 interface DashboardProps {
   PlayedJson: Song[];
@@ -91,15 +92,17 @@ export default function DashboardPage({
         }
 
         // Sort playlists: joined ones first, then by creation date
-        const sortedPlaylists = playlistsData.sort((a: Playlist, b: Playlist) => {
-          if (a.code === PartyCode && b.code !== PartyCode) return -1;
-          if (a.code !== PartyCode && b.code === PartyCode) return 1;
-          if (a.isJoined && !b.isJoined) return -1;
-          if (!a.isJoined && b.isJoined) return 1;
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        });
+        const sortedPlaylists = playlistsData.sort(
+          (a: Playlist, b: Playlist) => {
+            if (a.code === PartyCode && b.code !== PartyCode) return -1;
+            if (a.code !== PartyCode && b.code === PartyCode) return 1;
+            if (a.isJoined && !b.isJoined) return -1;
+            if (!a.isJoined && b.isJoined) return 1;
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          }
+        );
         setPlaylists(sortedPlaylists);
       } catch (error) {
         console.error('Auth check or data fetch failed:', error);
@@ -118,7 +121,7 @@ export default function DashboardPage({
         const url = forceRefresh
           ? `/api/playlists?refresh=true&t=${Date.now()}` // Add timestamp to prevent any caching
           : '/api/playlists';
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -131,10 +134,10 @@ export default function DashboardPage({
         if (!response.ok) {
           throw new Error('Failed to fetch playlists');
         }
-        
+
         const data = await response.json();
         console.log('Fetched playlist data:', data);
-        
+
         // Sort playlists: joined ones first, then by creation date
         const sortedPlaylists = data.sort((a: Playlist, b: Playlist) => {
           // First sort by joined status
@@ -147,7 +150,7 @@ export default function DashboardPage({
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         });
-        
+
         setPlaylists(sortedPlaylists);
         console.log('Updated playlists state:', sortedPlaylists);
       } catch (err) {
@@ -326,7 +329,7 @@ export default function DashboardPage({
   // Find current playlist - prioritize by code first, then by ID
   const currentPlaylist = useMemo(() => {
     if (!playlists.length) return null;
-    
+
     // First try to find by party code (most reliable)
     if (PartyCode) {
       const playlistByCode = playlists.find(p => p.code === PartyCode);
@@ -335,18 +338,28 @@ export default function DashboardPage({
         return playlistByCode;
       }
     }
-    
+
     // Fallback to finding by playlist ID
     if (PlaylistID) {
-      const playlistById = playlists.find(p => String(p.id) === String(PlaylistID));
+      const playlistById = playlists.find(
+        p => String(p.id) === String(PlaylistID)
+      );
       if (playlistById) {
         console.log('Found playlist by ID:', playlistById);
         return playlistById;
       }
     }
-    
-    console.log('No playlist found for PartyCode:', PartyCode, 'PlaylistID:', PlaylistID);
-    console.log('Available playlists:', playlists.map(p => ({ id: p.id, code: p.code, name: p.name })));
+
+    console.log(
+      'No playlist found for PartyCode:',
+      PartyCode,
+      'PlaylistID:',
+      PlaylistID
+    );
+    console.log(
+      'Available playlists:',
+      playlists.map(p => ({ id: p.id, code: p.code, name: p.name }))
+    );
     return null;
   }, [playlists, PartyCode, PlaylistID]);
 
@@ -359,11 +372,11 @@ export default function DashboardPage({
       playlistsLoaded: playlists.length > 0 || isAuthenticated,
       isAuthenticated,
       currentPlaylist: currentPlaylist
-        ? { 
-            id: currentPlaylist.id, 
-            code: currentPlaylist.code, 
+        ? {
+            id: currentPlaylist.id,
+            code: currentPlaylist.code,
             name: currentPlaylist.name,
-            type: typeof currentPlaylist.id 
+            type: typeof currentPlaylist.id,
           }
         : 'none',
       isPlaylistSelected: !!currentPlaylist,
@@ -393,7 +406,9 @@ export default function DashboardPage({
       currentPlaylist: currentPlaylist,
       currentPlaylistType: typeof currentPlaylist,
       currentPlaylistTruthy: !!currentPlaylist,
-      currentPlaylistKeys: currentPlaylist ? Object.keys(currentPlaylist) : null,
+      currentPlaylistKeys: currentPlaylist
+        ? Object.keys(currentPlaylist)
+        : null,
     });
   }
 
@@ -425,10 +440,10 @@ export default function DashboardPage({
         <div className='navbar-center'>
           {/* Enhanced debug info */}
           {process.env.NODE_ENV === 'development' && (
-            <div className='text-xs text-yellow-400 mb-2'>
+            <div className='mb-2 text-xs text-yellow-400'>
               Debug: PlaylistID={PlaylistID}, PartyCode={PartyCode},{' '}
-              currentPlaylist={currentPlaylist?.name || 'none'},{' '}
-              isSelected={isPlaylistSelected}, loaded={playlistsLoaded}
+              currentPlaylist={currentPlaylist?.name || 'none'}, isSelected=
+              {isPlaylistSelected}, loaded={playlistsLoaded}
             </div>
           )}
 
@@ -443,10 +458,9 @@ export default function DashboardPage({
             />
           ) : (
             <div className='mt-4 text-red-500'>
-              {playlistsLoaded 
+              {playlistsLoaded
                 ? 'Please select or join a playlist to add tracks.'
-                : 'Loading playlists...'
-              }
+                : 'Loading playlists...'}
             </div>
           )}
         </div>
@@ -537,8 +551,8 @@ export default function DashboardPage({
           <div className='dashboard-content first-panel'>
             {/* Add Spotify Player */}
             {isPlaylistSelected && (
-              <div className="mb-6">
-                <SpotifyPlayer 
+              <div className='mb-6'>
+                <SpotifyPlayer
                   PartyCode={PartyCode}
                   PlaylistID={PlaylistID}
                   tracks={hotTracks}
@@ -548,10 +562,10 @@ export default function DashboardPage({
 
             {/* Add Spotify Playlist Button */}
             {isPlaylistSelected && currentPlaylist?.spotifyUrl && (
-              <div className="mb-6 text-center">
-                <SpotifyButton 
+              <div className='mb-6 text-center'>
+                <SpotifyButton
                   spotifyUrl={currentPlaylist.spotifyUrl}
-                  className="text-lg px-6 py-3"
+                  className='px-6 py-3 text-lg'
                 />
               </div>
             )}
@@ -562,11 +576,11 @@ export default function DashboardPage({
                 {playedTracks && playedTracks.length > 0 ? (
                   <div className='flex flex-wrap gap-4 p-4'>
                     {playedTracks.map(song => (
-                      <div key={song.id} className="relative">
+                      <div key={song.id} className='relative'>
                         <SongCard song={song} showVoting={false} />
                         {song.addedBy && (
-                          <div className="absolute -bottom-2 left-2 right-2">
-                            <div className="bg-gray-700 text-white text-xs px-2 py-1 rounded text-center">
+                          <div className='absolute right-2 -bottom-2 left-2'>
+                            <div className='rounded bg-gray-700 px-2 py-1 text-center text-xs text-white'>
                               Added by {song.addedBy.username}
                             </div>
                           </div>
@@ -594,8 +608,8 @@ export default function DashboardPage({
 
                       return (
                         <div key={song.id} className='hot-track-item'>
-                          <div className='track-info'>
-                            <img
+                          <div className='flex items-center'>
+                            <Image
                               src={
                                 song.image ||
                                 song.album?.images[0]?.url ||
@@ -603,7 +617,12 @@ export default function DashboardPage({
                               }
                               alt={`${song.name} album art`}
                               className='track-image'
+                              width={64}
+                              height={64}
                               loading='lazy'
+                              unoptimized={
+                                !(song.image || song.album?.images[0]?.url)
+                              }
                             />
                             <div className='track-details'>
                               <h3 className='track-name' title={song.name}>
@@ -621,7 +640,7 @@ export default function DashboardPage({
                               </p>
                               {/* Add "Added by" info */}
                               {song.addedBy && (
-                                <p className='text-xs text-gray-400 mt-1'>
+                                <p className='mt-1 text-xs text-gray-400'>
                                   Added by {song.addedBy.username}
                                 </p>
                               )}

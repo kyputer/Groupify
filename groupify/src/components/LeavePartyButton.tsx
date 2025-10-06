@@ -37,7 +37,7 @@ export const LeavePartyButton = ({
 
         // Force a hard refresh of playlists with cache busting
         if (onLeave) {
-          await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
+          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
           onLeave();
         }
 

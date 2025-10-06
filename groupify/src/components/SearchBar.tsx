@@ -232,7 +232,9 @@ const SearchBar = ({
                     )}
                   </div>
                   <div className='search-result-artist'>
-                    {song.artists.map((artist: { name: string }) => artist.name).join(' & ')}
+                    {song.artists
+                      .map((artist: { name: string }) => artist.name)
+                      .join(' & ')}
                   </div>
                 </div>
                 <div className='text-sm text-gray-400'>

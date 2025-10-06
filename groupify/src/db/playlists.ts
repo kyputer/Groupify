@@ -161,8 +161,7 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
     SELECT * FROM playlists 
     WHERE is_public = 1 
     AND open = 1
-    ORDER BY created_at DESC`
-  );
+    ORDER BY created_at DESC`);
 
   return rows.map((row: PlaylistRow) => ({
     id: Number(row.PlaylistID), // Ensure it's a number
