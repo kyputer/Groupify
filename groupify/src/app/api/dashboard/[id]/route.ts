@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Use executeQuery for automatic connection management
-    const allTracks = await executeQuery(
+    const allTracks = await executeQuery<any>(
       `
       (
         SELECT DISTINCT
@@ -102,11 +102,11 @@ export async function GET(
     );
 
     // Separate hot and played tracks
-    const hotTracks = allTracks.filter(row => row.track_type === 'hot');
-    const playedTracks = allTracks.filter(row => row.track_type === 'played');
+    const hotTracks = allTracks.filter((row: any) => row.track_type === 'hot');
+    const playedTracks = allTracks.filter((row: any) => row.track_type === 'played');
 
     // Transform to expected format with user info
-    const hotSongs = hotTracks.map(row => ({
+    const hotSongs = hotTracks.map((row: any) => ({
       id: row.SpotifyID,
       name: row.title,
       artists: [{ name: row.artist }],
@@ -129,7 +129,7 @@ export async function GET(
       },
     }));
 
-    const playedSongs = playedTracks.map(row => ({
+    const playedSongs = playedTracks.map((row: any) => ({
       id: row.SpotifyID,
       name: row.title,
       artists: [{ name: row.artist }],
@@ -152,7 +152,7 @@ export async function GET(
       },
     }));
 
-    const hotVotes = hotSongs.map(song => ({
+    const hotVotes = hotSongs.map((song: Song) => ({
       SongID: song.id,
       Votes: song.Votes || 0,
       Selected: song.Selected || null,
