@@ -24,7 +24,7 @@
     "dotenv": "^16.5.0",
     "lucide-react": "^0.510.0",
     "mariadb": "^3.4.2",
-    "next": "15.4.2",
+    "next": "15.4.10",
     "package.json": "^2.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
