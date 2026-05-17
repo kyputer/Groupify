@@ -1,0 +1,33 @@
+import { store } from './store';
+import { clearUser } from './features/userSlice';
+import { clearAllPartyCode } from './features/partySlice';
+import { createAction } from '@reduxjs/toolkit';
+
+// This action will reset the entire Redux store to initial state
+export const resetAll = createAction('RESET_ALL');
+
+export async function resetStore() {
+  try {
+    // Call the reset API endpoint
+    const response = await fetch('/api/reset-dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to reset database');
+    }
+
+    // Clear Redux store
+    store.dispatch(clearUser());
+    store.dispatch(clearAllPartyCode());
+
+    // Redirect to login page
+    window.location.href = '/';
+  } catch (error) {
+    console.error('Error resetting store:', error);
+    throw error;
+  }
+}
