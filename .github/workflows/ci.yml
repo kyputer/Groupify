@@ -38,7 +38,6 @@ jobs:
         working-directory: groupify
 
     env:
-      NODE_ENV: test
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
       DB_USER: groupify
@@ -72,3 +71,16 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Smoke test production server
+        run: |
+          npm run start > /tmp/groupify-next.log 2>&1 &
+          echo $! > /tmp/groupify-next.pid
+          for i in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000 > /tmp/groupify-home.html; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/groupify-next.log
+          exit 1
