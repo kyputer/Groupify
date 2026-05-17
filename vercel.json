@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "npm --prefix groupify ci",
+  "buildCommand": "npm --prefix groupify run build",
+  "outputDirectory": "groupify/.next"
+}
