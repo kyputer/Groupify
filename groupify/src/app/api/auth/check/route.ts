@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/db';
 
+type AuthUserRow = {
+  id: number;
+  username: string;
+  email: string | null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const cookies = request.headers.get('cookie') || '';
@@ -18,9 +24,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Use executeQuery for automatic connection management
-    const users = await executeQuery('SELECT * FROM users WHERE id = ?', [
-      parseInt(sessionValue, 10),
-    ]);
+    const users = await executeQuery<AuthUserRow>(
+      'SELECT * FROM users WHERE id = ?',
+      [parseInt(sessionValue, 10)]
+    );
 
     console.log('Database lookup result:', users[0] || null);
 

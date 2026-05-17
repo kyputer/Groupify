@@ -5,9 +5,47 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
 
 declare global {
+  namespace Spotify {
+    interface PlaybackState {
+      paused: boolean;
+      position: number;
+      track_window: {
+        current_track: SpotifyCurrentTrack;
+      };
+    }
+
+    interface Player {
+      addListener(
+        event:
+          | 'initialization_error'
+          | 'authentication_error'
+          | 'account_error',
+        callback: (error: { message: string }) => void
+      ): void;
+      addListener(
+        event: 'player_state_changed',
+        callback: (state: PlaybackState | null) => void
+      ): void;
+      addListener(
+        event: 'ready' | 'not_ready',
+        callback: (state: { device_id: string }) => void
+      ): void;
+      connect(): Promise<boolean>;
+      disconnect(): void;
+      previousTrack(): Promise<void>;
+      togglePlay(): Promise<void>;
+    }
+  }
+
   interface Window {
     onSpotifyWebPlaybackSDKReady: () => void;
-    Spotify: unknown;
+    Spotify: {
+      Player: new (options: {
+        name: string;
+        getOAuthToken: (callback: (token: string) => void) => void;
+        volume: number;
+      }) => Spotify.Player;
+    };
   }
 }
 

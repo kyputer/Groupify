@@ -5,7 +5,7 @@ import { cache } from '@/lib/cache';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { playlistId: string } }
+  { params }: { params: Promise<{ playlistId: string }> }
 ) {
   try {
     const { playlistId } = await params;

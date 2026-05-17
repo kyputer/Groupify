@@ -4,14 +4,14 @@
  */
 
 class SimpleCache {
-  private cache = new Map<string, { data: any; expires: number }>();
+  private cache = new Map<string, { data: unknown; expires: number }>();
 
   /**
    * Get data from cache
    * @param key Cache key
    * @returns Cached data or null if expired/not found
    */
-  get(key: string): any | null {
+  get<T = unknown>(key: string): T | null {
     const item = this.cache.get(key);
     if (!item) return null;
 
@@ -20,7 +20,7 @@ class SimpleCache {
       return null;
     }
 
-    return item.data;
+    return item.data as T;
   }
 
   /**
@@ -29,7 +29,7 @@ class SimpleCache {
    * @param data Data to cache
    * @param ttl Time to live in seconds (optional, default is 300s)
    */
-  set(key: string, data: any, ttlSeconds: number = 300): void {
+  set<T = unknown>(key: string, data: T, ttlSeconds: number = 300): void {
     const expires = Date.now() + ttlSeconds * 1000;
     this.cache.set(key, { data, expires });
   }

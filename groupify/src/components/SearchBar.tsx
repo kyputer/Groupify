@@ -128,7 +128,7 @@ const SearchBar = ({
   };
 
   const handleTrackSelect = async (track: SpotifyTrack) => {
-    if (!playlistID || !playlistName || !playlistDescription) {
+    if (!playlistID || !playlistName) {
       setError('Please select a playlist before adding tracks.');
       return;
     }
@@ -147,7 +147,7 @@ const SearchBar = ({
           playlistCode: playlistID,
           trackId: track.id,
           name: playlistName,
-          description: playlistDescription,
+          description: playlistDescription || '',
           isPublic: playlistIsPublic,
         }),
         credentials: 'include',

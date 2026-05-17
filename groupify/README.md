@@ -41,6 +41,53 @@ Required variables (copy from `.env.example`):
 - `DB_USER` - Database username (default: `groupify`)
 - `DB_PASSWORD` - Database password (default: `groupify`)
 - `DB_NAME` - Database name (default: `groupify`)
+- `DB_PORT` - Database port (default: `3306`)
+- `DB_SSL` - Set to `true` for hosted MySQL providers that require TLS
+- `DB_SSL_CA` - Optional base64-encoded CA certificate PEM
+- `DB_SSL_REJECT_UNAUTHORIZED` - Keep `true` unless a provider explicitly requires otherwise
+
+## Free Deployment Path
+
+The current low-friction setup is:
+
+- **App hosting**: Vercel Hobby, connected to this GitHub repo.
+- **Database**: Aiven free MySQL, because the app already uses MariaDB/MySQL syntax and the `mariadb` driver.
+- **Automation**: GitHub Actions runs Linux CI on pull requests and pushes. The optional Vercel workflow deploys previews for PRs and production from `nextjs`.
+
+### GitHub Actions secrets
+
+Add these repository secrets before enabling automated Vercel deploys:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Set the runtime app variables in Vercel project settings:
+
+- `SESSION_SECRET`
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SPOTIFY_REDIRECT_URI`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `DB_SSL`
+- `DB_SSL_CA`
+- `DB_SSL_REJECT_UNAUTHORIZED`
+
+For an Aiven CA certificate:
+
+```bash
+base64 -w 0 ca.pem
+```
+
+Use the output as `DB_SSL_CA`. On PowerShell:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("ca.pem"))
+```
 
 ## Development Commands
 

@@ -17,6 +17,21 @@ const tracks = {
   pushTrackToQueue,
 };
 
+interface HotTrackRow {
+  SpotifyID: string;
+  title: string;
+  artist: string;
+  url: string;
+  image: string;
+  votes?: number;
+  duration_ms: number;
+  explicit: boolean;
+  Selected?: string | null;
+  UserID?: string;
+  vote_count?: number;
+  queue_at?: string;
+}
+
 async function upvote(
   track: Track,
   userID: number,
@@ -303,20 +318,6 @@ async function getHot(
     if (rows.length === 0) {
       logger.log('No hot tracks found for playlist:', PlaylistID);
       return [];
-    }
-
-    interface HotTrackRow {
-      SpotifyID: string;
-      title: string;
-      artist: string;
-      url: string;
-      image: string;
-      votes: number;
-      duration_ms: number;
-      explicit: boolean;
-      Selected: string | null;
-      UserID: string;
-      vote_count: number;
     }
 
     const mappedTracks = rows.map((row: HotTrackRow) => ({

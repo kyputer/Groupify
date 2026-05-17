@@ -4,6 +4,20 @@ import { logger } from './logger';
 
 dotenv.config();
 
+const ssl =
+  process.env.DB_SSL === 'true'
+    ? {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+        ...(process.env.DB_SSL_CA
+          ? {
+              ca: Buffer.from(process.env.DB_SSL_CA, 'base64').toString(
+                'utf8'
+              ),
+            }
+          : {}),
+      }
+    : undefined;
+
 // Production-optimized connection configuration
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
@@ -42,6 +56,7 @@ const dbConfig = {
   supportBigNumbers: true,
   bigNumberStrings: false,
   timezone: 'Z',
+  ...(ssl ? { ssl } : {}),
 
   // Connection validation (minimal in production)
   acquireCallback:
@@ -149,16 +164,16 @@ export async function getDBConnection(): Promise<PoolConnection> {
 /**
  * Production-optimized query execution
  */
-export async function executeQuery<T = unknown>(
+export async function executeQuery<T = Record<string, unknown>>(
   query: string,
   params: unknown[] = []
-): Promise<T> {
+): Promise<T[]> {
   let conn: PoolConnection | undefined;
 
   try {
     conn = await getDBConnection();
     const result = await conn.query(query, params);
-    return result;
+    return result as T[];
   } catch (error) {
     // Minimal logging in production
     if (process.env.NODE_ENV === 'development') {

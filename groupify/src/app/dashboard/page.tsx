@@ -1,6 +1,6 @@
 'use client';
 import Dashboard from '@/components/Dashboard';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store';
 import { Song } from '@/interfaces/Song';
@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { setPartyCode, setPartyCodeOwner } from '@/lib/features/partySlice';
 import { logger } from '@/lib/logger';
 
-export default function Page() {
+function DashboardPage() {
   const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
   const playlistID = useSelector(
@@ -185,5 +185,19 @@ export default function Page() {
         isOwner={isOwner}
       />
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className='flex h-screen items-center justify-center'>
+          Loading...
+        </div>
+      }
+    >
+      <DashboardPage />
+    </Suspense>
   );
 }

@@ -130,7 +130,7 @@ export async function createPlaylist(
 export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
   console.log('Getting playlists for user:', userID);
 
-  const rows = await executeQuery(
+  const rows = await executeQuery<PlaylistRow>(
     `
     SELECT playlists.*, playlist_users.Joined FROM playlists 
     LEFT JOIN playlist_users ON playlists.PlaylistID = playlist_users.PlaylistID
@@ -157,7 +157,7 @@ export async function getUserPlaylists(userID: string): Promise<Playlist[]> {
 }
 
 export async function getAllPublicPlaylists(): Promise<Playlist[]> {
-  const rows = await executeQuery(`
+  const rows = await executeQuery<PlaylistRow>(`
     SELECT * FROM playlists 
     WHERE is_public = 1 
     AND open = 1
@@ -177,7 +177,7 @@ export async function getAllPublicPlaylists(): Promise<Playlist[]> {
 }
 
 export async function getPlaylistID(code: string): Promise<number | null> {
-  const result = await executeQuery(
+  const result = await executeQuery<{ PlaylistID: number }>(
     'SELECT PlaylistID FROM playlists WHERE code = ?',
     [code]
   );
@@ -222,10 +222,16 @@ export async function joinPlaylist(
 
     // Check if the user is already in the playlist
     const joinCheck = await conn.query(
-      'SELECT PlaylistUserID FROM playlist_users WHERE UserID = ? AND PlaylistID = ?',
+      'SELECT PlaylistUserID, Joined FROM playlist_users WHERE UserID = ? AND PlaylistID = ?',
       [userID, codeCheck[0].PlaylistID]
     );
     if (joinCheck.length > 0) {
+      if (!joinCheck[0].Joined) {
+        await conn.query(
+          'UPDATE playlist_users SET Joined = TRUE WHERE PlaylistUserID = ?',
+          [joinCheck[0].PlaylistUserID]
+        );
+      }
       return codeCheck[0].PlaylistID;
     }
 
@@ -323,11 +329,17 @@ export async function joinPlaylistWithID(
 
     // Check if user is already in the playlist
     const userInPlaylist = await conn.query(
-      'SELECT * FROM playlist_users WHERE PlaylistID = ? AND UserID = ?',
+      'SELECT PlaylistUserID, Joined FROM playlist_users WHERE PlaylistID = ? AND UserID = ?',
       [playlistID, userID]
     );
     if (userInPlaylist.length > 0) {
       console.log('User is already in playlist');
+      if (!userInPlaylist[0].Joined) {
+        await conn.query(
+          'UPDATE playlist_users SET Joined = TRUE WHERE PlaylistUserID = ?',
+          [userInPlaylist[0].PlaylistUserID]
+        );
+      }
       return codeCheck[0].code; // Return the code
     }
 
@@ -448,16 +460,11 @@ export async function addTrackToPlaylist({
 
     // 1. Ensure track exists in tracks table
     const [existingTrack] = await conn.query(
-      'SELECT t.id FROM tracks t ' +
-        'JOIN playlist_tracks pt ON t.id = pt.TrackID ' +
-        'WHERE t.SpotifyID = ? AND pt.PlaylistID = ?;',
-      [trackId, playlist.id]
+      'SELECT id FROM tracks WHERE SpotifyID = ?;',
+      [trackId]
     );
-    let GroupifyTrackID: number;
     if (!existingTrack) {
-      // Fetch from Spotify
-
-      const trackInsertResult = await conn.query(
+      await conn.query(
         `INSERT INTO tracks (SpotifyID, title, artist, url, image, user_id, votes, duration_ms, explicit)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -472,14 +479,8 @@ export async function addTrackToPlaylist({
           track.explicit,
         ]
       );
-      GroupifyTrackID = trackInsertResult.insertId;
     } else {
-      GroupifyTrackID = existingTrack.id;
-      console.log('Existing track found:', GroupifyTrackID);
-      // Update the track's votes to += 1
-      await conn.query('UPDATE tracks SET votes = votes + 1 WHERE id = ?;', [
-        GroupifyTrackID,
-      ]);
+      console.log('Existing track found:', existingTrack.id);
     }
 
     // 2. Now insert into playlist_tracks
@@ -490,7 +491,9 @@ export async function addTrackToPlaylist({
 
     // 3. Add initial upvote for the user who added the track
     await conn.query(
-      'INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID) VALUES (?,?,?,?);',
+      `INSERT INTO votes (TrackID, UserID, VoteType, PlaylistID)
+       VALUES (?,?,?,?)
+       ON DUPLICATE KEY UPDATE VoteType = VALUES(VoteType);`,
       [track.id, createdBy, 'upvote', playlist.id]
     );
 

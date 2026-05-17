@@ -2,12 +2,17 @@
   "name": "groupify",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22 <25",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest",
@@ -15,7 +20,6 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.7.0",
-    "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.5.0",
     "lucide-react": "^0.510.0",

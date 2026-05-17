@@ -11,7 +11,7 @@ import { LogOutButton } from './LogOutButton';
 import SearchBar from './SearchBar';
 import SongCard from './SongCard';
 // import "react-tabs/style/react-tabs.css";
-import Page from '@/app/join-party/page';
+import JoinParty from '@/components/JoinParty';
 import { ClosePartyButton } from './CloseParty';
 import { RainbowButton } from './RainbowButton';
 import { SpotifyPlayer } from './SpotifyPlayer';
@@ -763,7 +763,7 @@ export default function DashboardPage({
         {!isInParty && (
           <TabPanel className={isMobile ? 'pb-16' : ''}>
             <div className='dashboard-content'>
-              <Page setTabIndex={setTabIndex} />
+              <JoinParty setTabIndex={setTabIndex} />
             </div>
           </TabPanel>
         )}

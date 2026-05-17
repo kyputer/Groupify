@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       !playlistCode ||
       !trackId ||
       !name ||
-      !description ||
       typeof isPublic === 'undefined'
     ) {
       logger.warn('Missing required playlist fields', {
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
       name,
       createdBy: userId,
       isPublic,
-      description,
+      description: description || '',
     });
 
     return NextResponse.json(result);

@@ -3,7 +3,7 @@ import playlists from '@/db/playlists';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { playlistId: string } }
+  { params }: { params: Promise<{ playlistId: string }> }
 ) {
   try {
     const { playlistId } = await params;

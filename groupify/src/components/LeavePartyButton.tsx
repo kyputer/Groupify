@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { clearPartyCode } from '@/lib/features/partySlice';
@@ -13,8 +14,14 @@ export const LeavePartyButton = ({
 }: LeavePartyButtonProps) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const handleLeaveParty = async () => {
+    if (isLeaving) {
+      return;
+    }
+
+    setIsLeaving(true);
     try {
       console.log('Starting leave party process...');
 
@@ -38,11 +45,12 @@ export const LeavePartyButton = ({
         // Force a hard refresh of playlists with cache busting
         if (onLeave) {
           await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
-          onLeave();
+          await onLeave();
         }
 
         // Navigate away from current party
-        router.push('/dashboard');
+        router.replace('/dashboard');
+        router.refresh();
       } else {
         console.error('Failed to leave party:', result.error);
         // Restore Redux state if API call failed
@@ -51,6 +59,8 @@ export const LeavePartyButton = ({
     } catch (error) {
       console.error('Error leaving party:', error);
       // Handle error - maybe restore state or show user notification
+    } finally {
+      setIsLeaving(false);
     }
   };
 
@@ -58,8 +68,9 @@ export const LeavePartyButton = ({
     <button
       className='rounded-md bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700'
       onClick={handleLeaveParty}
+      disabled={isLeaving}
     >
-      Leave Party
+      {isLeaving ? 'Leaving...' : 'Leave Party'}
     </button>
   );
 };

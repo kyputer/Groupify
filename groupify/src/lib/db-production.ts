@@ -1,4 +1,6 @@
 // Additional production-specific configurations
+import { executeQuery, getDBConnection } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 // Environment-based connection scaling
 export const getOptimalConnectionCount = () => {
